@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useState } from "react";
 import { Container, Display } from "@/components/ui/Layout";
 import { Glow } from "@/components/ui/Atmosphere";
-import { trailersCopy } from "@/config/content";
+import { useCopy } from "@/components/ContentProvider";
 import { trailerEmbeds, trailers as allTrailers } from "@/config/media";
 import type { Trailer } from "@/config/types";
 import { cn } from "@/lib/utils";
@@ -80,6 +80,9 @@ function PlaylistItem({ t, selected, playing, onSelect }: { t: Trailer; selected
  * Fullscreen comes from the YouTube player (allowFullScreen).
  */
 export function Trailers() {
+  // Wording from Admin → Content (defaults in src/config/content.ts).
+  const copy = useCopy();
+  const trailersCopy = copy.trailers;
   const [activeId, setActiveId] = useState(trailers[0]?.youtubeId ?? "");
   const [playing, setPlaying] = useState(false);
   const active = trailers.find((t) => t.youtubeId === activeId);

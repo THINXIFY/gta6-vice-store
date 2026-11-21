@@ -1,8 +1,7 @@
 import "server-only";
 import { createHash } from "node:crypto";
 import { and, asc, eq } from "drizzle-orm";
-import { assets, networks, quoteMinutes, txPatterns, type AssetId, type NetworkId } from "@/config/payments";
-import { editions as editionConfig, platforms as platformConfig } from "@/config/product";
+import { assets, networks, quoteMinutes, supports, txPatterns, type AssetId, type NetworkId } from "@/config/payments";
 import type { EditionId, PlatformId } from "@/config/types";
 import * as s from "@/db/schema";
 import { checkoutAvailable, checkoutOpen } from "@/lib/checkout";
@@ -133,6 +132,8 @@ export async function createOrder(input: CreateInput, ip: string): Promise<{ ord
     .from(s.prices)
     .where(and(eq(s.prices.editionId, input.edition), eq(s.prices.platformId, input.platform), eq(s.prices.active, true)));
   if (!price) throw new InputError("This edition is not available on that platform.");
+  // The coin must support the network; whether the method is offered is decided by its row below (Admin → Wallets).
+  if (!supports(input.asset, input.network)) throw new InputError("That payment method is not available.");
   const [method] = await db
     .select()
     .from(s.paymentMethods)
@@ -253,7 +254,3 @@ export async function submitPayment(paymentId: unknown, email: string, proof: Pr
 /** Admin-side transition helper (used by src/server/admin.ts). */
 export { transition as adminTransition, recordTransition, findByPaymentId };
 
-export const catalogue = {
-  editions: editionConfig.map((e) => e.id),
-  platforms: platformConfig.map((p) => p.id),
-};

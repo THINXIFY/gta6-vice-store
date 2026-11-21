@@ -12,13 +12,21 @@ const txEvm = () => "0x" + hex(64);
 /** Smallest valid PNG (1×1). */
 const PNG = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==", "base64");
 
-async function startCheckout(page: Page, opts: { asset?: string; network?: string } = {}) {
+/** Opens the country picker, searches and chooses. */
+async function pickRegion(page: Page, name: string) {
+  await page.locator("[data-region-trigger]").click();
+  await page.getByRole("combobox", { name: "Search countries" }).fill(name.slice(0, 4));
+  await page.getByRole("option", { name, exact: true }).click();
+  await expect(page.locator("[data-region-trigger]")).toContainText(name);
+}
+
+/** `method` = "ASSET:network", one of the five configured payment methods. */
+async function startCheckout(page: Page, opts: { method?: string } = {}) {
   await page.goto("/checkout?edition=ultimate&platform=xbox-series");
   test.skip(!(await isPreview(page)), "checkout preview only");
   await page.getByLabel("Email for your order").fill("buyer@example.com");
-  await page.getByLabel("Console account region").selectOption("eu");
-  await page.locator("label", { hasText: opts.asset ?? "USDT" }).first().click();
-  if (opts.network) await page.getByRole("radiogroup", { name: /Network for/ }).locator("label", { hasText: opts.network }).click();
+  await pickRegion(page, "Pakistan");
+  await page.locator(`[data-method="${opts.method ?? "USDT:tron"}"]`).click();
   await page.getByRole("button", { name: "Continue to payment" }).click();
   await expect(page).toHaveURL(/\/checkout\/payment\?id=VICE-[0-9A-Z]{8}$/);
   return new URL(page.url()).searchParams.get("id")!;
@@ -44,29 +52,31 @@ test("live builds keep checkout closed", async ({ page, request }) => {
   for (const b of await page.getByRole("button", { name: /^Buy /, includeHidden: true }).all()) await expect(b).toBeDisabled();
 });
 
-test("checkout carries the landing-page selection and shows primary assets first", async ({ page }) => {
+test("checkout carries the landing-page selection and offers exactly the five payment methods", async ({ page }) => {
   await page.goto("/checkout?edition=ultimate&platform=xbox-series");
   test.skip(!(await isPreview(page)), "checkout preview only");
   await expect(page.getByRole("radio", { name: /Ultimate Edition/ })).toBeChecked();
   await expect(page.getByRole("radio", { name: "Xbox Series X|S" })).toBeChecked();
-  const primary = page.getByRole("radiogroup", { name: "Cryptocurrency" });
-  for (const id of ["USDT", "BTC", "ETH", "BNB", "USDC"]) await expect(primary).toContainText(id);
-  await expect(page.locator("#more-assets")).toBeHidden();
-  await page.getByRole("button", { name: "More payment options" }).click();
-  for (const id of ["SOL", "TRX", "LTC", "POL"]) await expect(page.locator("#more-assets")).toContainText(id);
+  await expect(page.locator("[data-delivery-note]")).toContainText("download the complete game");
+  const methods = page.getByRole("radiogroup", { name: "Payment method" }).locator("[data-method]");
+  // The starting methods (src/brand/payments.ts) in display order; other coins only if enabled in Admin → Wallets.
+  const offered = await methods.evaluateAll((els) => els.map((e) => e.getAttribute("data-method")!));
+  expect(offered.filter((m) => ["USDT:bsc", "USDT:tron", "BTC:bitcoin", "ETH:ethereum", "BNB:bsc"].includes(m))).toEqual(["USDT:bsc", "USDT:tron", "BTC:bitcoin", "ETH:ethereum", "BNB:bsc"]);
+  for (const gone of ["USDC", "SOL", "POL", "Polygon", "Solana"]) await expect(page.locator("main")).not.toContainText(gone);
   // A required choice is missing: no order is created.
   await page.getByLabel("Email for your order").fill("buyer@example.com");
-  await page.getByLabel("Console account region").selectOption("us");
+  await pickRegion(page, "United States");
   await page.getByRole("button", { name: "Continue to payment" }).click();
-  await expect(page.locator("main").getByRole("alert")).toContainText("Choose a cryptocurrency");
+  await expect(page.locator("main").getByRole("alert")).toContainText("Choose how you want to pay");
 });
 
 test("payment page shows exact amount, network warning and copy actions; submission awaits manual review", async ({ page }) => {
-  const id = await startCheckout(page, { network: "Ethereum" });
+  const id = await startCheckout(page, { method: "USDT:bsc" });
   await expect(page.locator("main")).toContainText("39.00");
   await expect(page.getByText(/Amount held for \d+:\d{2}/)).toBeVisible();
   await expect(page.getByText("Quote expired")).toHaveCount(0);
-  await expect(page.locator("main")).toContainText("Ethereum (ERC20)");
+  await expect(page.locator("main")).toContainText("BNB Smart Chain (BEP20)");
+  await expect(page.locator("[data-delivery-note]")).toContainText("Your download link arrives by email");
   await expect(page.getByRole("alert").filter({ hasText: "on another network" })).toBeVisible();
   for (const what of ["Exact amount", "Payment ID"]) await expect(page.getByRole("button", { name: new RegExp(`Copy ${what}`) })).toBeVisible();
   await expect(page.locator("main")).toContainText("NOT-A-REAL-ADDRESS");
@@ -74,7 +84,7 @@ test("payment page shows exact amount, network warning and copy actions; submiss
   const qr = page.getByRole("img", { name: /QR code with the receiving address/ });
   await expect(qr).toBeVisible();
   expect(await qr.getAttribute("data-qr-value")).toContain("NOT-A-REAL-ADDRESS");
-  await expect(page.locator("main")).toContainText("Sample address for testing. Do not send funds.");
+  await expect(page.locator("main")).toContainText("Test order. Do not send funds.");
 
   // Proof form: order facts are read-only and prefilled.
   await expect(page.locator("form", { hasText: "Submit your payment" })).toContainText("buyer@example.com");
@@ -91,10 +101,14 @@ test("payment page shows exact amount, network warning and copy actions; submiss
   // The screenshot is required.
   await page.getByRole("button", { name: "Submit payment for verification" }).click();
   await expect(page.getByRole("alert").filter({ hasText: "Add a screenshot" })).toBeVisible();
-  await page.locator("input[type=file]").setInputFiles({ name: "proof.png", mimeType: "image/png", buffer: PNG });
+  // Clicking the drop zone opens the file picker (as a buyer would), then the file is chosen there.
+  const chooser = page.waitForEvent("filechooser");
+  await page.locator("[data-shot-drop]").click();
+  await (await chooser).setFiles({ name: "proof.png", mimeType: "image/png", buffer: PNG });
   await expect(page.getByRole("img", { name: "Selected payment screenshot" })).toBeVisible();
   await page.getByRole("button", { name: "Submit payment for verification" }).click();
   await expect(page.getByRole("heading", { name: "Payment submitted successfully" })).toBeVisible();
+  await expect(page.locator("[data-delivery-note]")).toContainText("we email you a private link to get your game");
   await expect(page.locator("main")).toContainText("39.00 USDT");
   await expect(page.locator("main")).toContainText("Estimated processing time");
   await expect(page.locator("main")).toContainText("Our target processing time is 30 minutes");
@@ -109,7 +123,7 @@ test("payment page shows exact amount, network warning and copy actions; submiss
 });
 
 test("order status needs Payment ID and email", async ({ page }) => {
-  const id = await startCheckout(page, { asset: "BTC" });
+  const id = await startCheckout(page, { method: "BTC:bitcoin" });
   await page.goto("/order-status");
   await page.getByLabel("Payment ID").fill(id);
   await page.getByLabel("Email used for the order").fill("someone-else@example.com");

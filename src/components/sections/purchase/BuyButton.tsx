@@ -22,7 +22,7 @@ export function BuyButton({ label, describedBy, className }: { label: string; de
         aria-describedby={describedBy}
         className={cn(
           base,
-          "bg-[linear-gradient(100deg,var(--color-vice)_0%,#ff7a7c_45%,var(--color-sunset)_100%)] bg-[length:140%_100%] bg-left text-obsidian hover:bg-right active:scale-[0.98]",
+          "bg-[linear-gradient(100deg,var(--color-vice)_0%,var(--color-blend)_45%,var(--color-sunset)_100%)] bg-[length:140%_100%] bg-left text-obsidian hover:bg-right active:scale-[0.98]",
           className,
         )}
       >

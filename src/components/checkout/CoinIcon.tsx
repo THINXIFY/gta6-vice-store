@@ -1,10 +1,16 @@
+import Image from "next/image";
 import type { AssetId } from "@/config/payments";
 import { cn } from "@/lib/utils";
 
-/**
- * Simple original coin marks: brand colour + recognisable glyph. Not official logos.
- * Decorative: always paired with the ticker in text.
- */
+/** Owner-supplied coin icons (public/crypto-icons, 512×512 PNG) for the offered coins. */
+const ICONS: Partial<Record<AssetId, string>> = {
+  USDT: "/crypto-icons/usdt.png",
+  BTC: "/crypto-icons/bitcoin.png",
+  ETH: "/crypto-icons/ethereum.png",
+  BNB: "/crypto-icons/binance.png",
+};
+
+/** Drawn fallback for a coin without an icon file: brand colour + recognisable glyph. */
 const COINS: Record<AssetId, { bg: string; fg: string; glyph: string }> = {
   USDT: { bg: "#26A17B", fg: "#fff", glyph: "₮" },
   USDC: { bg: "#2775CA", fg: "#fff", glyph: "$" },
@@ -17,7 +23,16 @@ const COINS: Record<AssetId, { bg: string; fg: string; glyph: string }> = {
   POL: { bg: "#8247E5", fg: "#fff", glyph: "∞" },
 };
 
+/** Decorative coin mark: always paired with the ticker in text. Size comes from `className` (size-*). */
 export function CoinIcon({ asset, className }: { asset: AssetId; className?: string }) {
+  const src = ICONS[asset];
+  if (src) {
+    return (
+      <span aria-hidden className={cn("relative block size-9 shrink-0 overflow-hidden rounded-full", className)}>
+        <Image src={src} alt="" fill unoptimized className="object-contain" />
+      </span>
+    );
+  }
   const c = COINS[asset];
   return (
     <span

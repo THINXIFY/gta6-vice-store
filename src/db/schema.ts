@@ -47,9 +47,15 @@ export const adminRole = pgEnum("admin_role", ["owner", "reviewer"]);
 
 // ── Catalogue ────────────────────────────────────────────────────────────────
 
+/**
+ * The catalogue is managed in Admin → Catalogue (WL-2). config/product.ts only seeds a new
+ * database. Ids are stable slugs; rows that orders reference are hidden (active = false),
+ * never deleted.
+ */
 export const products = pgTable("products", {
   id: text("id").primaryKey(),
   title: text("title").notNull(),
+  shortTitle: text("short_title").notNull().default(""),
   createdAt: created(),
 });
 
@@ -57,6 +63,12 @@ export const editions = pgTable("editions", {
   id: text("id").primaryKey(),
   productId: text("product_id").notNull().references(() => products.id),
   name: text("name").notNull(),
+  /** One or two sentences for the purchase panel. */
+  summary: text("summary").notNull().default(""),
+  /** A few words for compact pickers, e.g. "The full game". */
+  shortSummary: text("short_summary").notNull().default(""),
+  recommended: boolean("recommended").notNull().default(false),
+  sort: integer("sort").notNull().default(0),
   active: boolean("active").notNull().default(true),
   createdAt: created(),
 });
@@ -64,7 +76,50 @@ export const editions = pgTable("editions", {
 export const platforms = pgTable("platforms", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
+  shortName: text("short_name").notNull().default(""),
+  sort: integer("sort").notNull().default(0),
+  /** How buyers redeem a code on this platform (order page once the game is ready). */
+  redeemLabel: text("redeem_label").notNull().default(""),
+  redeemUrl: text("redeem_url").notNull().default(""),
+  redeemSteps: jsonb("redeem_steps").$type<string[]>().notNull().default([]),
   active: boolean("active").notNull().default(true),
+});
+
+/** "What each edition includes": one row per item, grouped by category in the comparison. */
+export const editionItems = pgTable(
+  "edition_items",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    productId: text("product_id").notNull().references(() => products.id),
+    category: text("category").notNull(),
+    name: text("name").notNull(),
+    /** Edition ids that include this item. */
+    editionIds: jsonb("edition_ids").$type<string[]>().notNull().default([]),
+    sort: integer("sort").notNull().default(0),
+    createdAt: created(),
+  },
+  (t) => [index("edition_items_product_sort").on(t.productId, t.sort)],
+);
+
+/**
+ * Editable wording (WL-4): only what the client changed, by key ("copy", "faq", "notes",
+ * "pages", "page:<id>"). Missing keys fall back to src/config/content.ts, policies.ts, legal.ts.
+ */
+export const siteContent = pgTable("site_content", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedAt: updated(),
+});
+
+/** Home page layout (WL-3): which blocks show, in what order, and their menu labels. */
+export const homeBlocks = pgTable("home_blocks", {
+  /** A block id from src/lib/blocks.ts. */
+  id: text("id").primaryKey(),
+  enabled: boolean("enabled").notNull().default(true),
+  sort: integer("sort").notNull().default(0),
+  /** Menu label; empty = not in the menu. */
+  navLabel: text("nav_label").notNull().default(""),
+  updatedAt: updated(),
 });
 
 /** Authoritative prices. The browser never supplies an amount. */

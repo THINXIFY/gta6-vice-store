@@ -1,16 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Big_Shoulders, Hanken_Grotesk } from "next/font/google";
 import { headers } from "next/headers";
+import { brand } from "@/brand/brand";
+import { displayFont, sansFont } from "@/brand/fonts";
+import { themeCss } from "@/brand/theme";
+import { CatalogProvider } from "@/components/CatalogProvider";
+import { ContentProvider } from "@/components/ContentProvider";
 import { Header } from "@/components/layout/Header";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { commerce } from "@/config/product";
 import { site } from "@/config/site";
 import { shareImage } from "@/config/media";
 import { isUsable } from "@/lib/media";
+import { getCatalog } from "@/server/catalog";
+import { getNav } from "@/server/home";
+import { getContent } from "@/server/content";
 import "./globals.css";
 
-const display = Big_Shoulders({ subsets: ["latin"], axes: ["opsz"], variable: "--font-big-shoulders", display: "swap", fallback: ["Arial Narrow", "sans-serif"], adjustFontFallback: false });
-const sans = Hanken_Grotesk({ subsets: ["latin"], variable: "--font-hanken", display: "swap" });
 
 const MOTION_BOOT = `if(matchMedia("(prefers-reduced-motion: no-preference)").matches)document.documentElement.classList.add("motion-ok")`;
 
@@ -19,8 +24,8 @@ const indexable = process.env.NEXT_PUBLIC_INDEXABLE === "true";
 
 // Under 160 characters. Purchase wording only once checkout is genuinely open.
 const description = commerce.checkoutEnabled
-  ? `Buy GTA VI Standard or Ultimate Edition for PS5 and Xbox Series X|S. Compare what each edition includes and pay in crypto. Independent retailer.`
-  : `Compare GTA VI Standard and Ultimate Edition for PS5 and Xbox Series X|S: prices, what each includes and which to choose. Independent retailer.`;
+  ? `Buy GTA VI Standard or Ultimate Edition for PS5 and Xbox Series X|S. Compare what each edition includes and pay in crypto.`
+  : `Compare GTA VI Standard and Ultimate Edition for PS5 and Xbox Series X|S: prices, what each includes and which to choose.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
@@ -48,17 +53,19 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#08080d",
+  themeColor: brand.colors.base,
   colorScheme: "dark",
 };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // Per-request CSP nonce from src/proxy.ts (also makes every page dynamically rendered).
-  const nonce = (await headers()).get("x-nonce") ?? undefined;
+  const [nonce, catalog, nav, content] = await Promise.all([headers().then((h) => h.get("x-nonce") ?? undefined), getCatalog(), getNav(), getContent()]);
   return (
     // suppressHydrationWarning: the inline script below adds a class before hydration.
-    <html lang="en" className={`${display.variable} ${sans.variable}`} suppressHydrationWarning>
+    <html lang={brand.locale.split("-")[0]} className={`${displayFont.variable} ${sansFont.variable}`} suppressHydrationWarning>
       <head>
+        {/* This client's theme colours (src/brand), generated from brand.ts. */}
+        <style id="brand-theme" dangerouslySetInnerHTML={{ __html: themeCss }} />
         {/* Runs before first paint so motion-only initial states never flash. */}
         <script nonce={nonce} dangerouslySetInnerHTML={{ __html: MOTION_BOOT }} />
       </head>
@@ -69,9 +76,13 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
         >
           Skip to content
         </a>
-        <SmoothScroll />
-        <Header />
-        {children}
+        <CatalogProvider catalog={catalog}>
+          <ContentProvider copy={content.copy} published={content.published}>
+            <SmoothScroll />
+            <Header nav={nav} />
+            {children}
+          </ContentProvider>
+        </CatalogProvider>
       </body>
     </html>
   );

@@ -42,7 +42,7 @@ export function LoginForm() {
         </label>
       )}
       {state.error && (
-        <p role="alert" className="rounded-lg bg-vice/10 px-3 py-2 text-sm text-[#ff9fc4]">
+        <p role="alert" className="rounded-lg bg-vice/10 px-3 py-2 text-sm text-danger-soft">
           {state.error}
         </p>
       )}

@@ -14,7 +14,7 @@ export default async function DashLayout({ children }: { children: ReactNode }) 
   const [toReview, openSupport] = await Promise.all([reviewCount(), openSupportCount()]);
   const mail = emailSettings().mode;
   return (
-    <div className="lg:flex">
+    <div className="admin-ui min-h-svh bg-admin lg:flex">
       <Sidebar email={me.email} role={me.role} reviewCount={toReview} supportCount={openSupport} logout={logoutAction} />
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-admin/85 px-4 backdrop-blur-md sm:px-8 lg:h-16">
@@ -38,7 +38,7 @@ export default async function DashLayout({ children }: { children: ReactNode }) 
               </Link>
             )}
             {!checkoutOpen && (
-              <span title="Live checkout is disabled. Orders, wallets and fulfillment items marked Test are not real." className="inline-flex items-center gap-1.5 rounded-lg border border-[#ffd400]/25 bg-[#ffd400]/[0.06] px-2.5 py-1.5 text-xs font-semibold text-[#ffe680]">
+              <span title="Live checkout is disabled. Orders, wallets and fulfillment items marked Test are not real." className="inline-flex items-center gap-1.5 rounded-lg border border-warning/25 bg-warning/[0.06] px-2.5 py-1.5 text-xs font-semibold text-warning-soft">
                 <FlaskConical aria-hidden className="size-3.5" />
                 <span className="max-sm:sr-only">Development mode</span>
                 {mail !== "live" && <span className="sr-only">, emails in {mail} mode</span>}

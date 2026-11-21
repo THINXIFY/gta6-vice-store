@@ -1,13 +1,15 @@
 import "server-only";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { networks, type NetworkId } from "@/config/payments";
-import { editions, platforms } from "@/config/product";
+import { editionName, platformName } from "@/lib/catalog";
+import { getCatalog } from "../catalog";
 import { site } from "@/config/site";
 import * as s from "@/db/schema";
 import { checkoutOpen } from "@/lib/checkout";
 import { getDb } from "../db";
 import { hashKey, newAccessKey } from "../security";
-import { sendMail, type SmtpConfig } from "./smtp";
+import { getContent } from "../content";
+import { parseAddress, sendMail, type SmtpConfig } from "./smtp";
 import { renderEmail, type EmailData, type EmailKind, type EmailOrder } from "./templates";
 
 /**
@@ -44,6 +46,31 @@ export function emailSettings() {
 type Send = { kind: EmailKind; to: string; dedupeKey: string; orderId?: string; data: EmailData };
 type Status = "sent" | "failed" | "skipped";
 
+/**
+ * Sender identity: the display name, reply-to and admin alert recipients from Admin → Emails, over
+ * the environment (EMAIL_FROM name, EMAIL_REPLY_TO, ADMIN_NOTIFY_EMAIL), with the store name as the
+ * last fallback. The From ADDRESS always comes from EMAIL_FROM (it must match the mail server).
+ */
+export async function emailIdentity() {
+  const cfg = emailSettings();
+  const saved = (await getContent()).email;
+  let address = "";
+  let envName = "";
+  try {
+    if (cfg.from) ({ address, name: envName = "" } = parseAddress(cfg.from));
+  } catch {
+    address = "";
+  }
+  const name = (saved.fromName || envName || site.name).replace(/["\r\n<>]/g, "").trim();
+  return {
+    name,
+    address,
+    from: address ? `"${name}" <${address}>` : "",
+    replyTo: saved.replyTo || cfg.replyTo || undefined,
+    adminNotify: saved.adminNotify.length ? saved.adminNotify : cfg.adminNotify,
+  };
+}
+
 /** Renders and sends one logged email row (first attempt or retry) and records the outcome. */
 async function deliver(rowId: string, kind: EmailKind, to: string, data: EmailData): Promise<Status> {
   const cfg = emailSettings();
@@ -60,7 +87,8 @@ async function deliver(rowId: string, kind: EmailKind, to: string, data: EmailDa
     return "skipped";
   }
   try {
-    const result = await sendMail(cfg.smtp!, { from: cfg.from, to: redirect ?? to, replyTo: cfg.replyTo, subject, text: email.text, html: email.html, headers: { "X-Vice-Email": kind } });
+    const id = await emailIdentity();
+    const result = await sendMail(cfg.smtp!, { from: id.from || cfg.from, to: redirect ?? to, replyTo: id.replyTo, subject, text: email.text, html: email.html, headers: { "X-Vice-Email": kind } });
     await db.update(s.emailMessages).set({ ...attempt, status: "sent", sentAt: new Date(), providerId: result.messageId, error: null }).where(eq(s.emailMessages.id, rowId));
     return "sent";
   } catch (err) {
@@ -90,12 +118,13 @@ async function loadOrder(orderId: string) {
   const db = await getDb();
   const [o] = await db.select().from(s.orders).where(eq(s.orders.id, orderId));
   if (!o) return null;
+  const catalog = await getCatalog();
   const [sub] = await db.select().from(s.paymentSubmissions).where(eq(s.paymentSubmissions.orderId, orderId)).orderBy(desc(s.paymentSubmissions.createdAt)).limit(1);
   const order: EmailOrder = {
     paymentId: o.paymentId,
     reference: o.reference,
-    edition: editions.find((e) => e.id === o.editionId)?.name ?? o.editionId,
-    platform: platforms.find((p) => p.id === o.platformId)?.name ?? o.platformId,
+    edition: editionName(catalog, o.editionId),
+    platform: platformName(catalog, o.platformId),
     price: usd(o.usdCents),
     amount: o.cryptoAmount,
     asset: o.asset,
@@ -175,8 +204,8 @@ async function supportData(id: string): Promise<EmailData["support"] | null> {
 }
 
 async function adminRecipients() {
-  const cfg = emailSettings();
-  if (cfg.adminNotify.length) return cfg.adminNotify;
+  const { adminNotify } = await emailIdentity();
+  if (adminNotify.length) return adminNotify;
   const db = await getDb();
   return (await db.select({ email: s.adminUsers.email }).from(s.adminUsers).where(and(eq(s.adminUsers.role, "owner"), eq(s.adminUsers.active, true)))).map((a) => a.email);
 }

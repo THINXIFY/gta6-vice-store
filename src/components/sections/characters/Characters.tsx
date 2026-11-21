@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Container } from "@/components/ui/Layout";
 import { Glow } from "@/components/ui/Atmosphere";
-import { charactersCopy } from "@/config/content";
+import { getCopy } from "@/server/content";
 import { characterArt } from "@/config/media";
 import { characters } from "@/config/product";
 import { isUsable } from "@/lib/media";
@@ -53,7 +53,10 @@ function Slice({ id, range }: { id: "jason" | "lucia"; range: [number, number] }
  * single picture on scroll (two lives, one story). Without usable art, the bios stand
  * alone in the same layout.
  */
-export function Characters() {
+export async function Characters() {
+  // Wording from Admin → Content (defaults in src/config/content.ts).
+  const copy = await getCopy();
+  const charactersCopy = copy.characters;
   const [jason, lucia] = characters;
   const art = isUsable(characterArt.image);
 

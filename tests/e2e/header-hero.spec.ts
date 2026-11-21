@@ -2,10 +2,10 @@ import { expect, test } from "@playwright/test";
 
 test("every nav link targets an existing section", async ({ page }) => {
   await page.goto("/");
-  const hrefs = ["#overview", "#editions", "#explore", "#trailers"];
-  for (const href of hrefs) {
-    await expect(page.locator(href)).toHaveCount(1);
-  }
+  // The menu is built from the enabled home page blocks (Admin → Homepage): read it, do not assume it.
+  const hrefs = await page.locator(`nav[aria-label="Primary"] a`).evaluateAll((as) => as.map((a) => a.getAttribute("href")!));
+  for (const h of ["#overview", "#editions", "#explore", "#trailers"]) expect(hrefs).toContain(h);
+  for (const href of hrefs) await expect(page.locator(href)).toHaveCount(1);
 });
 
 test("hero shows product, CTAs and only verified facts", async ({ page }) => {
@@ -13,9 +13,8 @@ test("hero shows product, CTAs and only verified facts", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/Grand Theft Auto\s+VI/);
   await expect(page.locator("#overview").getByRole("link", { name: "Get GTA VI" })).toHaveAttribute("href", "#editions");
   await expect(page.getByRole("link", { name: "Watch trailer" })).toHaveAttribute("href", "#trailers");
-  await expect(page.locator("#overview")).toContainText("PlayStation 5");
-  // Release date is verified (rockstargames.com/VI). The only price is the server catalog minimum.
-  await expect(page.locator("#overview")).toContainText("Released November 19, 2026");
+  // No release/status line in the hero (removed by request). The only price is the server catalog minimum.
+  await expect(page.locator("#overview")).not.toContainText("Released November 19, 2026");
   await expect(page.locator("#overview")).toContainText("Standard Edition from $19.00");
 });
 

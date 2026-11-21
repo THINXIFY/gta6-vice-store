@@ -13,12 +13,14 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/e2e.mjs",
     "check": "npm run typecheck && npm run lint && npm run build",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "node scripts/db-migrate.mjs",
     "test:db": "node scripts/test-db.mjs",
-    "test:email": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-email.mjs"
+    "test:email": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-email.mjs",
+    "db:backup": "node scripts/db-backup.mjs",
+    "new-client": "node scripts/new-client.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.15",

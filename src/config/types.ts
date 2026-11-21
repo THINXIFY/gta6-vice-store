@@ -5,7 +5,11 @@
 
 export type Verifiable<T> = { value: T; verified: boolean; source?: string };
 
-export type PlatformId = "ps5" | "xbox-series";
+/** Platform and edition ids are stable slugs managed in Admin → Catalogue (WL-2). */
+export type PlatformId = string;
+
+/** How buyers redeem a code on a platform (shown on the order page once the game is ready). */
+export type Redeem = { label: string; url: string; steps: string[] };
 
 export type Platform = {
   id: PlatformId;
@@ -14,18 +18,20 @@ export type Platform = {
   available: boolean;
   verified: boolean;
   source?: string;
+  redeem?: Redeem;
 };
 
 /** Amount in minor units (cents). `null` = not confirmed; UI shows a placeholder. */
 export type Price = { amount: number | null; currency: string };
 
-export type EditionId = "standard" | "ultimate";
+export type EditionId = string;
 
 export type Edition = {
   id: EditionId;
   name: string;
   summary: string;
-  contents: Verifiable<string[]>;
+  /** A few words for compact pickers, e.g. "The full game". */
+  shortSummary?: string;
   prices: Record<PlatformId, Price>;
   recommended?: boolean;
 };

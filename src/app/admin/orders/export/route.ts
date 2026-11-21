@@ -1,4 +1,5 @@
-import { editions, platforms } from "@/config/product";
+import { editionName, platformName } from "@/lib/catalog";
+import { getCatalog } from "@/server/catalog";
 import { exportOrders } from "@/server/admin";
 import { currentAdmin, require2fa, requestIpHash } from "@/server/auth";
 import { rateLimit } from "@/server/security";
@@ -23,6 +24,7 @@ export async function GET(req: Request) {
 
   const p = new URL(req.url).searchParams;
   const get = (k: string) => p.get(k)?.slice(0, 120) || undefined;
+  const catalog = await getCatalog();
   const rows = await exportOrders(admin, { q: get("q"), status: get("status"), dataset: get("dataset"), asset: get("asset"), sort: get("sort") }, await requestIpHash());
 
   const head = ["Payment ID", "Reference", "Data", "Status", "Created (UTC)", "Customer email", "Region", "Edition", "Platform", "Price (USD)", "Asset", "Network", "Expected amount", "Reported amount", "Verified amount", "TXID", "Submitted (UTC)", "Game released"];
@@ -35,8 +37,8 @@ export async function GET(req: Request) {
       r.createdAt,
       r.email,
       r.region,
-      editions.find((e) => e.id === r.editionId)?.name ?? r.editionId,
-      platforms.find((x) => x.id === r.platformId)?.name ?? r.platformId,
+      editionName(catalog, r.editionId),
+      platformName(catalog, r.platformId),
       (r.usdCents / 100).toFixed(2),
       r.asset,
       r.network,

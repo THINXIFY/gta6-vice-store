@@ -1,6 +1,16 @@
 import "server-only";
 import { and, asc, desc, eq, ilike, inArray, isNull, lt, or, sql } from "drizzle-orm";
-import { networks, type NetworkId } from "@/config/payments";
+import { methodRank, networks, supports, type AssetId, type NetworkId } from "@/config/payments";
+import { sampleAddress } from "@/lib/orders/methods";
+import { productId } from "@/config/product";
+import { pendingItems } from "@/config/legal";
+import { faqGroups, type Assurance, type FaqItem } from "@/config/policies";
+import { site, type PageId } from "@/config/site";
+import { COPY_SECTIONS, copyFields, isCopyPath } from "@/lib/content";
+import { textToSections } from "@/lib/legal-text";
+import { getContent, type PageEdit } from "./content";
+import { BLOCKS, isBlockId, type HomeBlock } from "@/lib/blocks";
+import { getHome, seedHome } from "./home";
 import * as s from "@/db/schema";
 import { transitions, type OrderStatus } from "@/lib/orders/types";
 import { isValidAddress, looksLikeSecret } from "./addresses";
@@ -349,9 +359,23 @@ export async function review(admin: Admin, paymentId: string, action: "start_rev
 
 // ── Wallets ─────────────────────────────────────────────────────────────────
 
+/** Every payment method row (enabled first, in display order). Switched-off rows stay for order history. */
 export async function listWallets() {
   const db = await getDb();
-  return db.select().from(s.paymentMethods).orderBy(s.paymentMethods.asset, s.paymentMethods.network);
+  const rows = await db.select().from(s.paymentMethods);
+  return rows.filter((r) => supports(r.asset, r.network)).sort((a, b) => Number(b.active) - Number(a.active) || methodRank(a.asset, a.network) - methodRank(b.asset, b.network));
+}
+
+/** Adds a supported coin/network as a TEST method with a sample address (or switches an existing one back on). */
+export async function addWallet(admin: Admin, input: { asset: string; network: string }, ipHash: string) {
+  owner(admin);
+  if (!supports(input.asset, input.network)) throw new AdminError("That coin is not supported on that network.");
+  const db = await getDb();
+  const [existing] = await db.select().from(s.paymentMethods).where(and(eq(s.paymentMethods.asset, input.asset), eq(s.paymentMethods.network, input.network)));
+  if (existing?.active) throw new AdminError("That payment method is already listed.");
+  if (existing) await db.update(s.paymentMethods).set({ active: true, updatedAt: new Date() }).where(and(eq(s.paymentMethods.asset, input.asset), eq(s.paymentMethods.network, input.network)));
+  else await db.insert(s.paymentMethods).values({ asset: input.asset, network: input.network, address: sampleAddress(input.asset as AssetId, input.network as NetworkId), validated: false, isTest: true, active: true });
+  await audit(actorOf(admin), "wallet.add", "payment_method", `${input.asset}:${input.network}`, { reactivated: Boolean(existing) }, ipHash);
 }
 
 export async function updateWallet(admin: Admin, input: { asset: string; network: string; address: string; active: boolean; validated: boolean; live: boolean }, ipHash: string) {
@@ -373,13 +397,387 @@ export async function updateWallet(admin: Admin, input: { asset: string; network
   await audit(actorOf(admin), "wallet.update", "payment_method", `${input.asset}:${input.network}`, { from: current.address, to: address, active: input.active, validated, live: input.live }, ipHash);
 }
 
-// ── Products & pricing ──────────────────────────────────────────────────────
+// ── Catalogue (WL-2) ────────────────────────────────────────────────────────
 
+/** Everything Admin → Catalogue edits, including hidden editions and platforms. */
 export async function catalogAdmin() {
   const db = await getDb();
-  const [editions, platforms, prices] = await Promise.all([db.select().from(s.editions), db.select().from(s.platforms), db.select().from(s.prices)]);
-  return { editions, platforms, prices };
+  const [[product], editions, platforms, prices, items] = await Promise.all([
+    db.select().from(s.products).where(eq(s.products.id, productId)),
+    db.select().from(s.editions).orderBy(asc(s.editions.sort), asc(s.editions.createdAt)),
+    db.select().from(s.platforms).orderBy(asc(s.platforms.sort), asc(s.platforms.id)),
+    db.select().from(s.prices),
+    db.select().from(s.editionItems).where(eq(s.editionItems.productId, productId)).orderBy(asc(s.editionItems.sort), asc(s.editionItems.createdAt)),
+  ]);
+  return { product, editions, platforms, prices, items };
 }
+
+const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+/** A stable id from a name: "Deluxe Edition" becomes "deluxe-edition". */
+export const slugify = (name: string) =>
+  name
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+
+function need(value: string, label: string, max: number) {
+  const v = value.trim();
+  if (!v) throw new AdminError(`${label} is required.`);
+  if (v.length > max) throw new AdminError(`${label} must be ${max} characters or fewer.`);
+  return v;
+}
+function optional(value: string, label: string, max: number) {
+  const v = value.trim();
+  if (v.length > max) throw new AdminError(`${label} must be ${max} characters or fewer.`);
+  return v;
+}
+function sortValue(value: string) {
+  const n = Number(value || 0);
+  if (!Number.isInteger(n) || n < 0 || n > 999) throw new AdminError("Order must be a whole number from 0 to 999.");
+  return n;
+}
+async function freeId(table: typeof s.editions | typeof s.platforms, base: string) {
+  if (!base || !SLUG.test(base)) throw new AdminError("Use letters or numbers in the name.");
+  const db = await getDb();
+  for (let i = 0; i < 50; i++) {
+    const id = i ? `${base}-${i + 1}` : base;
+    const [hit] = await db.select({ id: table.id }).from(table).where(eq(table.id, id));
+    if (!hit) return id;
+  }
+  throw new AdminError("Could not create a unique id for that name.");
+}
+
+export async function updateProduct(admin: Admin, input: { title: string; shortTitle: string }, ipHash: string) {
+  owner(admin);
+  const title = need(input.title, "Title", 120);
+  const shortTitle = optional(input.shortTitle, "Short title", 40);
+  const db = await getDb();
+  await db.update(s.products).set({ title, shortTitle }).where(eq(s.products.id, productId));
+  await audit(actorOf(admin), "product.update", "product", productId, { title, shortTitle }, ipHash);
+}
+
+export async function saveEdition(
+  admin: Admin,
+  input: { id?: string; name: string; summary: string; shortSummary: string; recommended: boolean; sort: string; active: boolean },
+  ipHash: string,
+) {
+  owner(admin);
+  const values = {
+    name: need(input.name, "Name", 80),
+    summary: optional(input.summary, "Summary", 400),
+    shortSummary: optional(input.shortSummary, "Short line", 40),
+    recommended: input.recommended,
+    sort: sortValue(input.sort),
+    active: input.active,
+  };
+  const db = await getDb();
+  if (input.id) {
+    const [found] = await db.select({ id: s.editions.id }).from(s.editions).where(eq(s.editions.id, input.id));
+    if (!found) throw new AdminError("Unknown edition.");
+    if (!values.active) {
+      const others = await db.select({ id: s.editions.id }).from(s.editions).where(and(eq(s.editions.active, true), sql`${s.editions.id} <> ${input.id}`));
+      if (!others.length) throw new AdminError("Keep at least one edition on sale.");
+    }
+    await db.update(s.editions).set(values).where(eq(s.editions.id, input.id));
+    await audit(actorOf(admin), "edition.update", "edition", input.id, values, ipHash);
+  } else {
+    const id = await freeId(s.editions, slugify(values.name));
+    await db.insert(s.editions).values({ id, productId, ...values });
+    await audit(actorOf(admin), "edition.create", "edition", id, values, ipHash);
+  }
+}
+
+export async function savePlatform(
+  admin: Admin,
+  input: { id?: string; name: string; shortName: string; sort: string; redeemLabel: string; redeemUrl: string; redeemSteps: string; active: boolean },
+  ipHash: string,
+) {
+  owner(admin);
+  const redeemUrl = optional(input.redeemUrl, "Redeem link", 300);
+  if (redeemUrl && !/^https:\/\/\S+$/.test(redeemUrl)) throw new AdminError("The redeem link must start with https://.");
+  const steps = input.redeemSteps
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (steps.length > 8) throw new AdminError("Use at most 8 redeem steps.");
+  if (steps.some((l) => l.length > 200)) throw new AdminError("Each redeem step must be 200 characters or fewer.");
+  const values = {
+    name: need(input.name, "Name", 60),
+    shortName: optional(input.shortName, "Short name", 30),
+    sort: sortValue(input.sort),
+    redeemLabel: optional(input.redeemLabel, "Redeem button", 60),
+    redeemUrl,
+    redeemSteps: steps,
+    active: input.active,
+  };
+  const db = await getDb();
+  if (input.id) {
+    const [found] = await db.select({ id: s.platforms.id }).from(s.platforms).where(eq(s.platforms.id, input.id));
+    if (!found) throw new AdminError("Unknown platform.");
+    await db.update(s.platforms).set(values).where(eq(s.platforms.id, input.id));
+    await audit(actorOf(admin), "platform.update", "platform", input.id, values, ipHash);
+  } else {
+    const id = await freeId(s.platforms, slugify(values.name));
+    await db.insert(s.platforms).values({ id, ...values });
+    await audit(actorOf(admin), "platform.create", "platform", id, values, ipHash);
+  }
+}
+
+export async function saveEditionItem(admin: Admin, input: { id?: string; category: string; name: string; editionIds: string[]; sort: string }, ipHash: string) {
+  owner(admin);
+  const db = await getDb();
+  const known = new Set((await db.select({ id: s.editions.id }).from(s.editions)).map((e) => e.id));
+  const values = {
+    category: need(input.category, "Category", 60),
+    name: need(input.name, "Item", 120),
+    editionIds: [...new Set(input.editionIds)].filter((id) => known.has(id)),
+    sort: sortValue(input.sort),
+  };
+  if (input.id) {
+    const [found] = await db.select({ id: s.editionItems.id }).from(s.editionItems).where(eq(s.editionItems.id, input.id));
+    if (!found) throw new AdminError("Unknown item.");
+    await db.update(s.editionItems).set(values).where(eq(s.editionItems.id, input.id));
+    await audit(actorOf(admin), "edition_item.update", "edition_item", input.id, values, ipHash);
+  } else {
+    const [row] = await db.insert(s.editionItems).values({ productId, ...values }).returning({ id: s.editionItems.id });
+    await audit(actorOf(admin), "edition_item.create", "edition_item", row!.id, values, ipHash);
+  }
+}
+
+/** Items carry no order history, so they can be removed outright. */
+export async function deleteEditionItem(admin: Admin, id: string, ipHash: string) {
+  owner(admin);
+  const db = await getDb();
+  const [row] = await db.delete(s.editionItems).where(eq(s.editionItems.id, id)).returning();
+  if (!row) throw new AdminError("Unknown item.");
+  await audit(actorOf(admin), "edition_item.delete", "edition_item", id, { category: row.category, name: row.name }, ipHash);
+}
+
+// ── Homepage layout (WL-3) ───────────────────────────────────────────────────
+
+/** Writes the whole layout (order = array order), so the table always holds every block. */
+async function writeHome(blocks: HomeBlock[]) {
+  const db = await getDb();
+  await db.transaction(async (tx) => {
+    for (const [i, b] of blocks.entries()) {
+      await tx
+        .insert(s.homeBlocks)
+        .values({ id: b.id, enabled: b.enabled, sort: i, navLabel: b.nav })
+        .onConflictDoUpdate({ target: s.homeBlocks.id, set: { enabled: b.enabled, sort: i, navLabel: b.nav, updatedAt: new Date() } });
+    }
+  });
+}
+
+export async function saveHomeBlock(admin: Admin, input: { id: string; enabled: boolean; nav: string }, ipHash: string) {
+  owner(admin);
+  if (!isBlockId(input.id)) throw new AdminError("Unknown block.");
+  const nav = input.nav.trim();
+  if (nav.length > 24) throw new AdminError("Menu labels must be 24 characters or fewer.");
+  const enabled = input.enabled || Boolean(BLOCKS[input.id].required);
+  const blocks = (await getHome()).map((b) => (b.id === input.id ? { ...b, enabled, nav } : b));
+  if (blocks.filter((b) => b.enabled && b.nav).length > 7) throw new AdminError("Keep the menu to 7 items or fewer so it fits on one line.");
+  await writeHome(blocks);
+  await audit(actorOf(admin), "home.block", "home_block", input.id, { enabled, nav }, ipHash);
+}
+
+export async function moveHomeBlock(admin: Admin, id: string, direction: "up" | "down", ipHash: string) {
+  owner(admin);
+  if (!isBlockId(id)) throw new AdminError("Unknown block.");
+  if (id === "hero") throw new AdminError("The hero always opens the page.");
+  const blocks = [...(await getHome())];
+  const i = blocks.findIndex((b) => b.id === id);
+  const j = direction === "up" ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= blocks.length) return;
+  if (blocks[j]!.id === "hero") throw new AdminError("The hero always opens the page.");
+  [blocks[i], blocks[j]] = [blocks[j]!, blocks[i]!];
+  await writeHome(blocks);
+  await audit(actorOf(admin), "home.move", "home_block", id, { direction }, ipHash);
+}
+
+/** Back to this client's default layout (src/brand/home.ts). */
+export async function resetHome(admin: Admin, ipHash: string) {
+  owner(admin);
+  await writeHome(seedHome());
+  await audit(actorOf(admin), "home.reset", "home_block", "*", {}, ipHash);
+}
+
+// ── Content (WL-4) ───────────────────────────────────────────────────────────
+
+async function writeContent(key: string, value: unknown) {
+  const db = await getDb();
+  await db
+    .insert(s.siteContent)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: s.siteContent.key, set: { value, updatedAt: new Date() } });
+}
+
+/** Saves one section's wording. Only fields that differ from the default are stored. */
+export async function saveCopy(admin: Admin, section: string, fields: Record<string, string>, ipHash: string) {
+  owner(admin);
+  if (!(section in COPY_SECTIONS)) throw new AdminError("Unknown section.");
+  const defaults = new Map(copyFields().map((f) => [f.path, f.value]));
+  const overrides = { ...(await getContent()).copyOverrides };
+  const changed: string[] = [];
+  for (const [path, raw] of Object.entries(fields)) {
+    if (!isCopyPath(path) || !path.startsWith(section + ".")) continue;
+    const value = raw.trim();
+    if (value.length > 600) throw new AdminError("Each text must be 600 characters or fewer.");
+    if (!value || value === defaults.get(path)) delete overrides[path];
+    else overrides[path] = value;
+    changed.push(path);
+  }
+  await writeContent("copy", overrides);
+  await audit(actorOf(admin), "content.copy", "site_content", section, { fields: changed }, ipHash);
+}
+
+export async function resetCopy(admin: Admin, section: string, ipHash: string) {
+  owner(admin);
+  const overrides = Object.fromEntries(Object.entries((await getContent()).copyOverrides).filter(([p]) => !p.startsWith(section + ".")));
+  await writeContent("copy", overrides);
+  await audit(actorOf(admin), "content.copy_reset", "site_content", section, {}, ipHash);
+}
+
+type FaqInput = { id?: string; group: string; question: string; answer: string; published: boolean; checkoutOnly: boolean; source: string };
+
+export async function saveFaq(admin: Admin, input: FaqInput, ipHash: string) {
+  owner(admin);
+  if (!faqGroups.some((g) => g.id === input.group)) throw new AdminError("Choose a topic.");
+  const question = input.question.trim();
+  const answer = input.answer.trim();
+  if (!question || question.length > 200) throw new AdminError("The question is required (200 characters or fewer).");
+  if (!answer || answer.length > 1500) throw new AdminError("The answer is required (1,500 characters or fewer).");
+  const item: FaqItem = {
+    id: input.id || `${slugify(question).slice(0, 40)}-${Date.now().toString(36)}`,
+    group: input.group as FaqItem["group"],
+    question,
+    answer,
+    status: input.published ? "verified" : "draft",
+    ...(input.checkoutOnly && { requires: "checkout" as const }),
+    ...(input.source.trim() && { source: input.source.trim().slice(0, 200) }),
+  };
+  const faq = [...(await getContent()).faq];
+  const i = faq.findIndex((f) => f.id === item.id);
+  if (input.id && i < 0) throw new AdminError("Unknown question.");
+  if (i >= 0) faq[i] = item;
+  else faq.push(item);
+  await writeContent("faq", faq);
+  await audit(actorOf(admin), i >= 0 ? "content.faq_update" : "content.faq_create", "faq", item.id, { status: item.status }, ipHash);
+}
+
+export async function deleteFaq(admin: Admin, id: string, ipHash: string) {
+  owner(admin);
+  const faq = (await getContent()).faq;
+  if (!faq.some((f) => f.id === id)) throw new AdminError("Unknown question.");
+  await writeContent("faq", faq.filter((f) => f.id !== id));
+  await audit(actorOf(admin), "content.faq_delete", "faq", id, {}, ipHash);
+}
+
+export async function moveFaq(admin: Admin, id: string, direction: "up" | "down", ipHash: string) {
+  owner(admin);
+  const faq = [...(await getContent()).faq];
+  const i = faq.findIndex((f) => f.id === id);
+  const j = direction === "up" ? i - 1 : i + 1;
+  if (i < 0 || j < 0 || j >= faq.length) return;
+  [faq[i], faq[j]] = [faq[j]!, faq[i]!];
+  await writeContent("faq", faq);
+  await audit(actorOf(admin), "content.faq_move", "faq", id, { direction }, ipHash);
+}
+
+type NoteInput = { id?: string; title: string; body: string; published: boolean };
+
+/** Purchase panel notes (the reassurance lines under the buy button). */
+export async function saveNote(admin: Admin, input: NoteInput, ipHash: string) {
+  owner(admin);
+  const title = input.title.trim();
+  const body = input.body.trim();
+  if (!title || title.length > 80) throw new AdminError("The title is required (80 characters or fewer).");
+  if (!body || body.length > 300) throw new AdminError("The text is required (300 characters or fewer).");
+  const notes = [...(await getContent()).notes];
+  const i = notes.findIndex((n) => n.id === input.id);
+  if (input.id && i < 0) throw new AdminError("Unknown note.");
+  const note: Assurance = { id: input.id || `${slugify(title).slice(0, 30)}-${Date.now().toString(36)}`, title, body, icon: i >= 0 ? notes[i]!.icon : "help", status: input.published ? "verified" : "draft" };
+  if (i >= 0) notes[i] = note;
+  else notes.push(note);
+  await writeContent("notes", notes);
+  await audit(actorOf(admin), "content.note", "note", note.id, { status: note.status }, ipHash);
+}
+
+export async function deleteNote(admin: Admin, id: string, ipHash: string) {
+  owner(admin);
+  const notes = (await getContent()).notes;
+  if (!notes.some((n) => n.id === id)) throw new AdminError("Unknown note.");
+  await writeContent("notes", notes.filter((n) => n.id !== id));
+  await audit(actorOf(admin), "content.note_delete", "note", id, {}, ipHash);
+}
+
+const PAGE_IDS = Object.keys(site.pages) as PageId[];
+
+export async function savePage(
+  admin: Admin,
+  id: string,
+  input: { title: string; heading: string; description: string; intro: string; sections: string; updated: string },
+  ipHash: string,
+) {
+  owner(admin);
+  if (!PAGE_IDS.includes(id as PageId)) throw new AdminError("Unknown page.");
+  const title = input.title.trim();
+  const heading = input.heading.trim();
+  if (!title || title.length > 60) throw new AdminError("The browser title is required (60 characters or fewer).");
+  if (!heading || heading.length > 120) throw new AdminError("The page heading is required (120 characters or fewer).");
+  if (input.description.trim().length > 160) throw new AdminError("The search description must be 160 characters or fewer.");
+  if (input.sections.length > 40_000) throw new AdminError("The page text is too long.");
+  if (input.updated && !/^\d{4}-\d{2}-\d{2}$/.test(input.updated)) throw new AdminError("Use a date like 2026-11-21 for the last update.");
+  const sections = textToSections(input.sections);
+  if (!sections.length) throw new AdminError("Add at least one section (a line starting with ## ).");
+  const edit: PageEdit = { title, heading, description: input.description.trim(), intro: input.intro.trim(), sections, updated: input.updated || null };
+  await writeContent(`page:${id}`, edit);
+  // Saving new text with unresolved markers takes a published page back to draft.
+  const content = await getContent();
+  const page = { ...content.pages[id as PageId], ...edit };
+  if (content.published[id as PageId] && pendingItems(page).length) {
+    await writeContent("pages", { ...content.published, [id]: false });
+  }
+  await audit(actorOf(admin), "content.page", "page", id, { sections: sections.length }, ipHash);
+}
+
+/** Publishes or unpublishes a page. A page with "To confirm" markers cannot be published. */
+export async function setPagePublished(admin: Admin, id: string, published: boolean, ipHash: string) {
+  owner(admin);
+  if (!PAGE_IDS.includes(id as PageId)) throw new AdminError("Unknown page.");
+  const content = await getContent();
+  const pending = pendingItems(content.pages[id as PageId]);
+  if (published && pending.length) throw new AdminError(`Replace every "To confirm" item first (${pending.length} left), then publish.`);
+  await writeContent("pages", { ...content.published, [id]: published });
+  await audit(actorOf(admin), published ? "content.publish" : "content.unpublish", "page", id, {}, ipHash);
+}
+
+/** Email sender identity (WL-5): display name, reply-to and admin alert recipients. */
+export async function saveEmailIdentity(admin: Admin, input: { fromName: string; replyTo: string; adminNotify: string }, ipHash: string) {
+  owner(admin);
+  const fromName = input.fromName.replace(/["\r\n<>]/g, "").trim();
+  if (fromName.length > 60) throw new AdminError("The sender name must be 60 characters or fewer.");
+  const check = (v: string, what: string) => {
+    try {
+      return parseAddress(v).address;
+    } catch {
+      throw new AdminError(`${what} is not a valid email address: ${v.slice(0, 60)}`);
+    }
+  };
+  const replyTo = input.replyTo.trim() ? check(input.replyTo.trim(), "Reply-to") : "";
+  const adminNotify = input.adminNotify
+    .split(/[,\s]+/)
+    .map((v) => v.trim())
+    .filter(Boolean)
+    .map((v) => check(v, "An alert recipient"));
+  if (adminNotify.length > 10) throw new AdminError("Use at most 10 alert recipients.");
+  await writeContent("email", { fromName, replyTo, adminNotify });
+  await audit(actorOf(admin), "email.identity", "site_content", "email", { fromName, replyTo, recipients: adminNotify.length }, ipHash);
+}
+
+// ── Prices ──────────────────────────────────────────────────────────────────
 
 export async function updatePrice(admin: Admin, input: { editionId: string; platformId: string; dollars: string; active: boolean }, ipHash: string) {
   owner(admin);
@@ -396,13 +794,6 @@ export async function updatePrice(admin: Admin, input: { editionId: string; plat
     .values({ editionId: input.editionId, platformId: input.platformId, amountCents: cents, active: input.active })
     .onConflictDoUpdate({ target: [s.prices.editionId, s.prices.platformId], set: { amountCents: cents, active: input.active, updatedAt: new Date() } });
   await audit(actorOf(admin), "price.update", "price", `${input.editionId}:${input.platformId}`, { from: before?.amountCents ?? null, to: cents, active: input.active }, ipHash);
-}
-
-export async function setPlatformActive(admin: Admin, platformId: string, active: boolean, ipHash: string) {
-  owner(admin);
-  const db = await getDb();
-  await db.update(s.platforms).set({ active }).where(eq(s.platforms.id, platformId));
-  await audit(actorOf(admin), "platform.update", "platform", platformId, { active }, ipHash);
 }
 
 // ── Fulfillment ─────────────────────────────────────────────────────────────

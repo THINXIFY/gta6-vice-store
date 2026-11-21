@@ -1,0 +1,17 @@
+# Never in an image: secrets, local data, unlicensed media, build output, review screenshots.
+.env*
+!.env.example
+.data/
+media-pending/
+public/preview-media/
+review/
+.next/
+.next-e2e/
+node_modules/
+test-results/
+playwright-report/
+.git/
+.claude/
+*.pem
+*.key
+secrets/

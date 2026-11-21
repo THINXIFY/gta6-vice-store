@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { ScreenshotViewer } from "@/components/admin/ScreenshotViewer";
 import { Button, Card, EMAIL_LABELS, EmailStatus, Field, RetryButton, Flash, input, label, StatusBadge, TestPill, usd, when } from "@/components/admin/ui";
 import { networks, type NetworkId } from "@/config/payments";
-import { editions, platforms } from "@/config/product";
+import { editionName, platformName } from "@/lib/catalog";
+import { getCatalog } from "@/server/catalog";
 import { networkLabel } from "@/lib/orders/methods";
 import { statusInfo } from "@/lib/orders/types";
 import { CHECKLIST, orderDetail } from "@/server/admin";
@@ -17,6 +18,7 @@ export const metadata = { title: "Order" };
 type Props = { params: Promise<{ paymentId: string }>; searchParams: Promise<{ ok?: string; error?: string }> };
 
 export default async function OrderPage({ params, searchParams }: Props) {
+  const catalog = await getCatalog();
   const me = await requireAdmin(); // never rely on the layout alone for auth
   const [{ paymentId }, flash] = await Promise.all([params, searchParams]);
   const data = await orderDetail(paymentId);
@@ -40,8 +42,11 @@ export default async function OrderPage({ params, searchParams }: Props) {
           <StatusBadge status={o.status} />
           {o.isTest && <TestPill />}
         </div>
-        <p className="mt-1 text-sm text-warm/50">
-          {o.reference} · created {when(o.createdAt)}
+        <p className="mt-1.5 text-sm text-warm/60">
+          <span className="text-warm/85">{o.email}</span> · {editionName(catalog, o.editionId)} · {platformName(catalog, o.platformId)} · {usd(o.usdCents)}
+        </p>
+        <p className="mt-0.5 text-xs text-warm/45">
+          <span className="font-mono">{o.reference}</span> · created {when(o.createdAt)}
         </p>
       </div>
       <Flash ok={flash.ok} error={flash.error} />
@@ -51,7 +56,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
         {[
           { k: "Expected", v: o.cryptoAmount, sub: `${usd(o.usdCents)} at the locked rate`, tone: "" },
           { k: "Customer reported", v: latest?.claimedAmount, sub: latest ? (latest.claimedAmount === o.cryptoAmount ? "Matches the expected amount" : "Differs from the expected amount") : "Not submitted yet", tone: latest && latest.claimedAmount !== o.cryptoAmount ? "text-sunset" : "" },
-          { k: "Verified on-chain", v: o.verifiedAmount, sub: o.verifiedAmount ? "Confirmed by a reviewer" : "Set when you approve", tone: "text-[#9ef0c4]" },
+          { k: "Verified on-chain", v: o.verifiedAmount, sub: o.verifiedAmount ? "Confirmed by a reviewer" : "Set when you approve", tone: "text-success-soft" },
         ].map((a) => (
           <div key={a.k} className="-mr-px -mb-px border-r border-b border-line p-4 sm:p-5">
             <dt className="text-xs font-medium text-warm/55">{a.k}</dt>
@@ -118,8 +123,8 @@ export default async function OrderPage({ params, searchParams }: Props) {
             <dl className="divide-y divide-line">
               <Field k="Customer email" v={o.email} />
               <Field k="Account region" v={o.region} />
-              <Field k="Edition" v={editions.find((e) => e.id === o.editionId)?.name} />
-              <Field k="Platform" v={platforms.find((p) => p.id === o.platformId)?.name} />
+              <Field k="Edition" v={editionName(catalog, o.editionId)} />
+              <Field k="Platform" v={platformName(catalog, o.platformId)} />
               <Field k="Quote expires" v={when(o.quoteExpiresAt)} />
               <Field k="Submitted" v={latest ? when(latest.createdAt) : null} />
               <Field k="Fulfillment" v={fulfillment ? `${fulfillment.kind === "access_link" ? "Access link" : "Code"} ${fulfillment.hint} released ${when(fulfillment.assignedAt)}` : o.status === "payment_verified" ? "Awaiting release" : null} />
@@ -178,18 +183,23 @@ export default async function OrderPage({ params, searchParams }: Props) {
         </div>
 
         {/* Actions */}
-        <div className="grid content-start gap-6 xl:sticky xl:top-6">
-          {o.status === "payment_submitted" && (
-            <form action={reviewAction}>
-              <input type="hidden" name="paymentId" value={o.paymentId} />
-              <Button name="action" value="start_review" variant="secondary" className="w-full">
-                Start review
-              </Button>
-            </form>
-          )}
-
+        <div className="grid content-start gap-6 xl:sticky xl:top-22">
           {reviewable && (
-            <Card title="Approve payment">
+            <Card
+              title="Approve payment"
+              actions={
+                o.status === "payment_submitted" ? (
+                  <form action={reviewAction}>
+                    <input type="hidden" name="paymentId" value={o.paymentId} />
+                    <Button name="action" value="start_review" variant="secondary" className="h-8 px-3 text-xs" title="Mark this payment as being reviewed, so other admins know">
+                      Start review
+                    </Button>
+                  </form>
+                ) : (
+                  <span className="rounded-full bg-lavender/12 px-2 py-0.5 text-[0.6875rem] font-semibold text-lavender">In review</span>
+                )
+              }
+            >
               <form action={reviewAction} className="grid gap-4">
                 <input type="hidden" name="paymentId" value={o.paymentId} />
                 <fieldset className="grid gap-2">
@@ -199,7 +209,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                   </legend>
                   {CHECKLIST.map((c) => (
                     <label key={c.id} className="flex items-start gap-2.5 text-sm">
-                      <input type="checkbox" name="checklist" value={c.id} required className="mt-0.5 size-4 accent-[#ff9b62]" />
+                      <input type="checkbox" name="checklist" value={c.id} required className="mt-0.5 size-4 accent-sunset" />
                       {c.label}
                     </label>
                   ))}

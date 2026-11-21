@@ -5,19 +5,21 @@ import { notFound } from "next/navigation";
 import { Fragment, type ReactNode } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Layout";
-import { infoPages, pendingItems, type Block } from "@/config/legal";
+import { pendingItems, type Block } from "@/config/legal";
+import { getContent } from "@/server/content";
 import { site, type PageId } from "@/config/site";
 import { pageAvailable, pageIsDraft } from "@/lib/pages";
 
 /** Metadata for an information page. Drafts are never indexed. */
-export function infoMetadata(id: PageId): Metadata {
-  const p = infoPages[id];
+export async function infoMetadata(id: PageId): Promise<Metadata> {
+  const { pages, published } = await getContent();
+  const p = pages[id];
   return {
     title: p.title,
     description: p.description,
     alternates: { canonical: site.pages[id].href },
     openGraph: { title: `${p.heading} | ${site.name}`, description: p.description, url: site.pages[id].href, type: "website" },
-    ...(pageIsDraft(id) && { robots: { index: false, follow: false } }),
+    ...(pageIsDraft(id, published) && { robots: { index: false, follow: false } }),
   };
 }
 
@@ -26,7 +28,7 @@ function Rich({ text }: { text: string }) {
   return text.split(/(\{\{[^}]+\}\})/g).map((part, i) => {
     const m = /^\{\{(.+)\}\}$/.exec(part);
     return m ? (
-      <mark key={i} data-pending className="mx-0.5 box-decoration-clone rounded-md bg-[#ffd400]/12 px-1.5 py-0.5 text-[0.9em] text-[#ffe680] ring-1 ring-[#ffd400]/25">
+      <mark key={i} data-pending className="mx-0.5 box-decoration-clone rounded-md bg-warning/12 px-1.5 py-0.5 text-[0.9em] text-warning-soft ring-1 ring-warning/25">
         To confirm: {m[1]}
       </mark>
     ) : (
@@ -60,10 +62,11 @@ const dateText = (iso: string) => new Date(iso).toLocaleDateString("en-US", { da
  * numbered or plain sections and structured data. Unpublished pages 404 on the live site
  * and render as marked drafts (noindex) in content preview.
  */
-export function InfoPage({ id, children }: { id: PageId; children?: ReactNode }) {
-  if (!pageAvailable(id)) notFound();
-  const page = infoPages[id];
-  const draft = pageIsDraft(id);
+export async function InfoPage({ id, children }: { id: PageId; children?: ReactNode }) {
+  const { pages, published } = await getContent();
+  if (!pageAvailable(id, published)) notFound();
+  const page = pages[id];
+  const draft = pageIsDraft(id, published);
   const pending = pendingItems(page);
   const url = new URL(site.pages[id].href, site.url).toString();
   const jsonLd = [
@@ -102,7 +105,7 @@ export function InfoPage({ id, children }: { id: PageId; children?: ReactNode })
           <p className="mt-6 max-w-measure text-lead text-warm/75">{page.intro.includes("{{") ? <Rich text={page.intro} /> : page.intro}</p>
           <p className="mt-5 text-sm text-warm/50">{page.updated ? `Last updated ${dateText(page.updated)}` : "Not yet published"}</p>
           {draft && (
-            <div role="note" className="mt-8 flex max-w-measure gap-3 rounded-2xl border border-[#ffd400]/25 bg-[#ffd400]/[0.06] p-4 text-sm text-[#ffe680]">
+            <div role="note" className="mt-8 flex max-w-measure gap-3 rounded-2xl border border-warning/25 bg-warning/[0.06] p-4 text-sm text-warning-soft">
               <FileClock aria-hidden className="mt-0.5 size-4 shrink-0" />
               <p>
                 Draft preview. This page is not published and is hidden from search engines.{" "}

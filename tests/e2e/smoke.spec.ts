@@ -8,7 +8,7 @@ test.describe("foundation smoke", () => {
 
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-    await expect(page.locator("#overview").getByText(/not affiliated with/i)).toBeVisible();
+    // The non-affiliation notice lives in the footer (and near checkout); the hero no longer repeats it.
 
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);

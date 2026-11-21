@@ -8,15 +8,15 @@ test("unconfirmed steps, reassurances and links never appear outside content pre
   const drafts = page.locator("[data-status=draft]");
   if (!preview) {
     await expect(drafts).toHaveCount(0);
-    // Steps publish only as a complete confirmed sequence.
-    await expect(page.locator("#how-it-works ol")).toHaveCount(0);
   } else {
     expect(await drafts.count()).toBeGreaterThan(0);
-    await expect(page.locator("#how-it-works [data-step]")).toHaveCount(3);
   }
+  // "Good to know": 3–4 confirmed essentials only (the payment card shows only while checkout is available).
+  const cards = page.locator("#how-it-works [data-card]");
+  await expect(cards).toHaveCount(preview ? 3 : 2);
+  await expect(page.locator("#how-it-works [data-status=draft]")).toHaveCount(0);
   // Verified reassurances always show.
   await expect(page.locator("#how-it-works")).toContainText("Platform compatibility");
-  await expect(page.locator("#how-it-works")).toContainText("Independent retailer");
 });
 
 test("draft policy text is not shipped in client JavaScript of a live build", async ({ page, request }) => {
@@ -36,7 +36,6 @@ test.describe("footer", () => {
   test("has brand, working navigation, verified facts and no dead links", async ({ page }) => {
     await page.goto("/");
     const footer = page.getByRole("contentinfo");
-    await expect(footer).toContainText("Not affiliated with, endorsed or sponsored by Rockstar Games");
     await expect(footer).toContainText("PlayStation 5 and Xbox Series X|S");
     await expect(footer).toContainText(/© \d{4}/);
 

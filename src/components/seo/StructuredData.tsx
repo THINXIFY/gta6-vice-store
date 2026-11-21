@@ -1,6 +1,7 @@
 import { trailerEmbeds, trailers } from "@/config/media";
-import { faq } from "@/config/policies";
-import { editions, game, platforms } from "@/config/product";
+import { publishedFaq } from "@/components/sections/faq/Faq";
+import { getContent } from "@/server/content";
+import { game } from "@/config/product";
 import { site } from "@/config/site";
 import type { Catalog } from "@/lib/catalog";
 import { checkoutOpen } from "@/lib/checkout";
@@ -14,12 +15,13 @@ import { checkoutOpen } from "@/lib/checkout";
  *  - Product + Offer: only while live checkout is open (real stock, rights, policies), from
  *    the live catalogue prices. Never ratings or reviews.
  */
-export function StructuredData({ catalog }: { catalog: Catalog }) {
+export async function StructuredData({ catalog }: { catalog: Catalog }) {
+  const { faq, published } = await getContent();
   const id = (frag: string) => `${site.url}/#${frag}`;
   const graph: Record<string, unknown>[] = [];
 
   const organization = site.seller.legalName
-    ? { "@type": "Organization", "@id": id("organization"), name: site.name, legalName: site.seller.legalName, url: site.url, logo: `${site.url}/icon.svg`, ...(site.seller.supportEmail ? { email: site.seller.supportEmail } : {}) }
+    ? { "@type": "Organization", "@id": id("organization"), name: site.name, legalName: site.seller.legalName, url: site.url, logo: `${site.url}/apple-icon`, ...(site.seller.supportEmail ? { email: site.seller.supportEmail } : {}) }
     : null;
   if (organization) graph.push(organization);
 
@@ -28,7 +30,7 @@ export function StructuredData({ catalog }: { catalog: Catalog }) {
     "@id": id("website"),
     name: site.name,
     url: site.url,
-    description: `${site.tagline} ${site.shortDisclaimer}`,
+    description: site.tagline,
     inLanguage: site.locale,
     ...(organization && { publisher: { "@id": id("organization") } }),
   });
@@ -36,10 +38,10 @@ export function StructuredData({ catalog }: { catalog: Catalog }) {
   graph.push({
     "@type": "VideoGame",
     "@id": id("game"),
-    name: game.title,
-    alternateName: [game.shortTitle, "GTA 6", "Grand Theft Auto 6"],
+    name: catalog.product.title,
+    alternateName: [catalog.product.shortTitle, "GTA 6", "Grand Theft Auto 6"],
     url: site.url,
-    gamePlatform: platforms.filter((p) => p.verified).map((p) => p.name),
+    gamePlatform: catalog.platforms.map((p) => p.name),
     ...(game.publisher.verified && { publisher: { "@type": "Organization", name: game.publisher.value } }),
     ...(game.releaseDate.verified && { datePublished: game.releaseDate.value }),
     ...(trailerEmbeds && { trailer: trailers.filter((t) => t.embeddable).map((t) => ({ "@id": id(`trailer-${t.youtubeId}`) })) }),
@@ -62,22 +64,23 @@ export function StructuredData({ catalog }: { catalog: Catalog }) {
   }
 
   // Commercial markup only when the store can genuinely sell: checkout open and policies published.
-  const sellable = checkoutOpen && Boolean(site.seller.legalName) && site.pages.terms.published && site.pages.refunds.published;
+  const sellable = checkoutOpen && Boolean(site.seller.legalName) && published.terms && published.refunds;
   if (sellable) {
-    for (const e of editions) {
-      const offers = platforms
-        .filter((p) => p.verified && catalog.platforms[p.id] !== false)
+    for (const e of catalog.editions) {
+      const offers = catalog.platforms
+        .filter((p) => p.available)
         .flatMap((p) => {
           const cents = catalog.prices[`${e.id}:${p.id}`];
           return typeof cents === "number" && cents > 0
-            ? [{ "@type": "Offer", name: `${e.name}, ${p.name}`, price: (cents / 100).toFixed(2), priceCurrency: "USD", availability: "https://schema.org/InStock", url: `${site.url}/checkout?edition=${e.id}&platform=${p.id}`, seller: { "@id": id("organization") } }]
+            ? [{ "@type": "Offer", name: `${e.name}, ${p.name}`, price: (cents / 100).toFixed(2), priceCurrency: catalog.currency, availability: "https://schema.org/InStock", url: `${site.url}/checkout?edition=${e.id}&platform=${p.id}`, seller: { "@id": id("organization") } }]
             : [];
         });
-      if (offers.length) graph.push({ "@type": "Product", name: `${game.title} ${e.name}`, brand: { "@type": "Brand", name: game.publisher.verified ? game.publisher.value : game.title }, isRelatedTo: { "@id": id("game") }, offers });
+      if (offers.length) graph.push({ "@type": "Product", name: `${catalog.product.title} ${e.name}`, brand: { "@type": "Brand", name: game.publisher.verified ? game.publisher.value : catalog.product.title }, isRelatedTo: { "@id": id("game") }, offers });
     }
   }
 
-  const verifiedFaq = faq.filter((f) => f.status === "verified");
+  // Exactly the answers shown on this build (verified, and relevant while checkout is closed or open).
+  const verifiedFaq = publishedFaq(faq);
   if (verifiedFaq.length) {
     graph.push({
       "@type": "FAQPage",

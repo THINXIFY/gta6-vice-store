@@ -4,40 +4,27 @@ import Link from "next/link";
 import { AlertCircle, Check, CheckCircle2, Circle, Clock, ExternalLink, Gamepad2, LifeBuoy, XCircle } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { assets, networks, targetProcessingMinutes } from "@/config/payments";
-import { editions, game, platforms } from "@/config/product";
+import { useCatalog } from "@/components/CatalogProvider";
 import { site } from "@/config/site";
-import { pageHref } from "@/lib/pages";
-import type { PlatformId } from "@/config/types";
+import { usePageHref } from "@/components/ContentProvider";
+import { editionName, platformName, platformShortName } from "@/lib/catalog";
 import { formatPrice } from "@/lib/pricing";
 import { networkLabel } from "@/lib/orders/methods";
 import { orderStore, rememberAccessKey } from "@/lib/orders/store";
 import { statusInfo, timeline, type Order } from "@/lib/orders/types";
 import { cn } from "@/lib/utils";
 import { CoinIcon } from "./CoinIcon";
-import { CopyButton, TestBadge } from "./ui";
+import { CopyButton, DeliveryNote, TestBadge } from "./ui";
 
 
 const fieldClass = "h-13 w-full rounded-xl border border-warm/14 bg-obsidian/60 px-4 text-[0.9375rem] text-warm placeholder:text-warm/35 focus:border-sunset/70 focus:outline-none";
 
-/** Official redemption destinations (public, first-party). The code itself only ever comes from the backend after approval. */
-const REDEEM: Record<PlatformId, { label: string; href: string; steps: string[] }> = {
-  ps5: {
-    label: "Redeem on PlayStation Store",
-    href: "https://store.playstation.com/redeem",
-    steps: ["Sign in to the PlayStation Network account you play on.", "Open Redeem Codes and enter your code.", "Download Grand Theft Auto VI from your Game Library."],
-  },
-  "xbox-series": {
-    label: "Redeem on Xbox",
-    href: "https://redeem.microsoft.com",
-    steps: ["Sign in to the Microsoft account you use on your Xbox.", "Enter your code at the redeem page or in the Microsoft Store on your console.", "Install Grand Theft Auto VI from My games & apps."],
-  },
-};
 
 const TONE = {
   wait: { icon: Clock, ring: "border-sunset/40 bg-sunset/[0.06]", text: "text-sunset" },
-  action: { icon: AlertCircle, ring: "border-[#ffd400]/35 bg-[#ffd400]/[0.06]", text: "text-[#ffe680]" },
-  good: { icon: CheckCircle2, ring: "border-[#7be3ae]/30 bg-[#7be3ae]/[0.06]", text: "text-[#7be3ae]" },
-  bad: { icon: XCircle, ring: "border-vice/35 bg-vice/[0.07]", text: "text-[#ff9fc4]" },
+  action: { icon: AlertCircle, ring: "border-warning/35 bg-warning/[0.06]", text: "text-warning-soft" },
+  good: { icon: CheckCircle2, ring: "border-success/30 bg-success/[0.06]", text: "text-success" },
+  bad: { icon: XCircle, ring: "border-vice/35 bg-vice/[0.07]", text: "text-danger-soft" },
 } as const;
 
 
@@ -59,7 +46,7 @@ function Timeline({ order }: { order: Order }) {
               className={cn(
                 "relative z-10 grid size-7 shrink-0 place-items-center rounded-full border",
                 done && "border-sunset bg-sunset text-obsidian",
-                active && !off && "border-sunset bg-obsidian text-sunset shadow-[0_0_0_5px_rgb(255_155_98/0.15)]",
+                active && !off && "border-sunset bg-obsidian text-sunset shadow-[0_0_0_5px_color-mix(in_oklab,var(--color-sunset)_15%,transparent)]",
                 !done && !(active && !off) && "border-warm/20 bg-obsidian text-warm/30",
               )}
             >
@@ -80,18 +67,20 @@ function Timeline({ order }: { order: Order }) {
 }
 
 function GameAccess({ order }: { order: Order }) {
-  const r = REDEEM[order.platform];
+  // Redemption steps and link per platform (Admin → Catalogue). The code itself only ever comes from the backend after approval.
+  const catalog = useCatalog();
+  const r = catalog.platforms.find((p) => p.id === order.platform)?.redeem ?? { label: "", url: "", steps: [] };
   const f = order.fulfillment;
   return (
-    <section aria-labelledby="access-title" className="swap-in overflow-hidden rounded-media border border-[#7be3ae]/25 bg-[linear-gradient(160deg,rgb(123_227_174/0.08),transparent_55%)]">
+    <section aria-labelledby="access-title" className="swap-in overflow-hidden rounded-media border border-success/25 bg-[linear-gradient(160deg,color-mix(in_oklab,var(--color-success)_8%,transparent),transparent_55%)]">
       <div className="p-6 sm:p-8">
-        <Gamepad2 aria-hidden className="size-9 text-[#7be3ae]" strokeWidth={1.75} />
+        <Gamepad2 aria-hidden className="size-9 text-success" strokeWidth={1.75} />
         <h2 id="access-title" className="mt-4 font-display text-display-md font-extrabold tracking-[-0.005em]">
           Your game is ready
         </h2>
         <p className="mt-3 text-warm/70">Payment confirmed. Redeem your code on the account you play on.</p>
         <div className="mt-6 rounded-xl bg-obsidian/70 p-5">
-          <p className="text-xs text-warm/50">Your {platforms.find((p) => p.id === order.platform)!.shortName} code</p>
+          <p className="text-xs text-warm/50">Your {platformShortName(catalog, order.platform)} code</p>
           {/* Returned by the server only after approval, and only with the access key. */}
           <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <p className="flex flex-wrap items-center gap-3 font-mono text-xl tracking-[0.12em]">
@@ -111,27 +100,31 @@ function GameAccess({ order }: { order: Order }) {
             </li>
           ))}
         </ol>
-        <a
-          href={r.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="mt-7 inline-flex h-13 items-center gap-2 rounded-control bg-warm px-6 font-semibold text-obsidian transition-colors hover:bg-white"
-        >
-          {r.label}
-          <ExternalLink aria-hidden className="size-4" />
-          <span className="sr-only">(opens in a new tab)</span>
-        </a>
+        {r.url && (
+          <a
+            href={r.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-7 inline-flex h-13 items-center gap-2 rounded-control bg-warm px-6 font-semibold text-obsidian transition-colors hover:bg-white"
+          >
+            {r.label || "Redeem your code"}
+            <ExternalLink aria-hidden className="size-4" />
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        )}
       </div>
     </section>
   );
 }
 
 function OrderView({ order }: { order: Order }) {
+  const pageHref = usePageHref();
   const info = statusInfo[order.status];
   const tone = TONE[info.tone];
   const Icon = tone.icon;
-  const ed = editions.find((e) => e.id === order.edition)!;
-  const pf = platforms.find((p) => p.id === order.platform)!;
+  const catalog = useCatalog();
+  const ed = { name: editionName(catalog, order.edition) };
+  const pf = { name: platformName(catalog, order.platform) };
   const asset = assets.find((a) => a.id === order.quote.asset)!;
   const verified = order.status === "payment_verified" || order.status === "game_ready";
 
@@ -156,6 +149,8 @@ function OrderView({ order }: { order: Order }) {
             </a>
           )}
         </section>
+
+        {(order.status === "awaiting_payment" || order.status === "payment_submitted" || order.status === "under_review" || order.status === "payment_verified") && <DeliveryNote />}
 
         {order.status === "game_ready" &&
           (order.fulfillment ? (
@@ -185,7 +180,7 @@ function OrderView({ order }: { order: Order }) {
             <dt className="text-warm/55">Order reference</dt>
             <dd className="truncate text-right font-mono text-xs leading-5">{order.reference}</dd>
             <dt className="text-warm/55">Game</dt>
-            <dd className="text-right">{game.title}</dd>
+            <dd className="text-right">{catalog.product.title}</dd>
             <dt className="text-warm/55">Edition</dt>
             <dd className="text-right">{ed.name}</dd>
             <dt className="text-warm/55">Platform</dt>
@@ -200,7 +195,7 @@ function OrderView({ order }: { order: Order }) {
             <dt className="text-warm/55">Network</dt>
             <dd className="text-right">{networkLabel(order.quote.network)}</dd>
             <dt className="text-warm/55">Payment</dt>
-            <dd className={cn("text-right font-medium", verified ? "text-[#7be3ae]" : "text-warm/70")}>{verified ? "Confirmed" : "Not confirmed yet"}</dd>
+            <dd className={cn("text-right font-medium", verified ? "text-success" : "text-warm/70")}>{verified ? "Confirmed" : "Not confirmed yet"}</dd>
           </dl>
           {order.txid && (
             <div className="mt-5 border-t border-warm/10 pt-4 text-sm">
@@ -287,7 +282,7 @@ export function OrderStatusView({ initialId }: { initialId: string }) {
         </label>
       </div>
       {error && (
-        <p role="alert" className="mt-5 rounded-xl bg-vice/10 px-4 py-3 text-sm text-[#ff9fc4]">
+        <p role="alert" className="mt-5 rounded-xl bg-vice/10 px-4 py-3 text-sm text-danger-soft">
           {error}
         </p>
       )}

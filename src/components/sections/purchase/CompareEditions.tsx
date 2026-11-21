@@ -6,38 +6,42 @@ import { getLenis, scrollToHash } from "@/components/motion/SmoothScroll";
 import { Container, Display } from "@/components/ui/Layout";
 import { Glow } from "@/components/ui/Atmosphere";
 import { Price } from "@/components/ui/Price";
-import { compareCopy } from "@/config/content";
-import { editionContents } from "@/config/product";
+import { useCopy } from "@/components/ContentProvider";
+import { useCatalog } from "@/components/CatalogProvider";
 import type { Edition, EditionId } from "@/config/types";
+import { allItems, byCompleteness, editionsLine } from "@/lib/catalog";
 import { cn } from "@/lib/utils";
 import { EditionArt } from "./EditionArt";
 import { usePurchase } from "./PurchaseContext";
 
-/** Ultimate first (left), Standard second, per the brief. */
-const ORDER: EditionId[] = ["ultimate", "standard"];
-const allItems = editionContents.categories.flatMap((c) => c.items);
-
-/** Edition identities: sunset for Ultimate, dusk purple for Standard. */
-const THEME = {
-  ultimate: {
-    panel: "bg-[linear-gradient(180deg,#3d1732_0%,#24101f_42%,#150c15_100%)]",
-    glow: "bg-[radial-gradient(80%_60%_at_50%_0%,rgb(255_155_98/0.28),transparent_70%)]",
+/**
+ * Panel identities by rank: the most complete edition (shown first, per the brief) in the warm
+ * primary/secondary tones, the others in the accent tone. Built from theme tokens (src/brand).
+ */
+const THEMES = [
+  {
+    panel:
+      "bg-[linear-gradient(180deg,color-mix(in_oklab,var(--color-vice)_22%,var(--color-obsidian))_0%,color-mix(in_oklab,var(--color-vice)_10%,var(--color-obsidian))_42%,color-mix(in_oklab,var(--color-vice)_4%,var(--color-obsidian))_100%)]",
+    glow: "bg-[radial-gradient(80%_60%_at_50%_0%,color-mix(in_oklab,var(--color-sunset)_28%,transparent),transparent_70%)]",
     tick: "text-sunset",
-    choose: "bg-[linear-gradient(100deg,var(--color-vice)_0%,#ff7a7c_45%,var(--color-sunset)_100%)] text-obsidian hover:brightness-110",
+    choose: "bg-[linear-gradient(100deg,var(--color-vice)_0%,var(--color-blend)_45%,var(--color-sunset)_100%)] text-obsidian hover:brightness-110",
   },
-  standard: {
-    panel: "bg-[linear-gradient(180deg,#2b2152_0%,#1b1634_42%,#110f1e_100%)]",
-    glow: "bg-[radial-gradient(80%_60%_at_50%_0%,rgb(178_140_255/0.22),transparent_70%)]",
+  {
+    panel:
+      "bg-[linear-gradient(180deg,color-mix(in_oklab,var(--color-lavender)_24%,var(--color-obsidian))_0%,color-mix(in_oklab,var(--color-lavender)_12%,var(--color-obsidian))_42%,color-mix(in_oklab,var(--color-lavender)_5%,var(--color-obsidian))_100%)]",
+    glow: "bg-[radial-gradient(80%_60%_at_50%_0%,color-mix(in_oklab,var(--color-lavender)_22%,transparent),transparent_70%)]",
     tick: "text-lavender",
-    choose: "bg-lavender text-obsidian hover:bg-[#c4a6ff]",
+    choose: "bg-lavender text-obsidian hover:bg-lavender/85",
   },
-} as const;
+] as const;
+type Theme = (typeof THEMES)[number];
 
-function Contents({ edition, id }: { edition: Edition; id: string }) {
+function Contents({ edition, id, theme }: { edition: Edition; id: string; theme: Theme }) {
   const [open, setOpen] = useState(false);
-  const theme = THEME[edition.id];
-  const included = allItems.filter((i) => (i.in as readonly EditionId[]).includes(edition.id)).length;
-  const summary = included === allItems.length ? `All ${allItems.length} items` : `${included} of ${allItems.length} items`;
+  const catalog = useCatalog();
+  const items = allItems(catalog);
+  const included = items.filter((i) => i.in.includes(edition.id)).length;
+  const summary = included === items.length ? `All ${items.length} items` : `${included} of ${items.length} items`;
 
   return (
     <div className="mt-8 border-t border-warm/10 pt-6">
@@ -58,12 +62,12 @@ function Contents({ edition, id }: { edition: Edition; id: string }) {
       </div>
 
       <div id={id} className={cn("mt-5 grid gap-6", open ? "grid" : "hidden", "lg:grid")}>
-        {editionContents.categories.map((cat) => (
-          <div key={cat.id}>
+        {catalog.contents.map((cat) => (
+          <div key={cat.label}>
             <h5 className="text-xs font-semibold text-warm/50">{cat.label}</h5>
             <ul className="mt-2.5 grid gap-2">
               {cat.items.map((item) => {
-                const has = (item.in as readonly EditionId[]).includes(edition.id);
+                const has = item.in.includes(edition.id);
                 return (
                   <li key={item.name} className={cn("flex items-start gap-3 text-[0.9375rem] leading-snug", !has && "text-warm/35")}>
                     {has ? (
@@ -84,10 +88,11 @@ function Contents({ edition, id }: { edition: Edition; id: string }) {
   );
 }
 
-function Panel({ edition, onChoose }: { edition: Edition; onChoose: (id: EditionId) => void }) {
+function Panel({ edition, rank, onChoose }: { edition: Edition; rank: number; onChoose: (id: EditionId) => void }) {
   const { editionId, platformId } = usePurchase();
+  const { product, contents } = useCatalog();
   const selected = edition.id === editionId;
-  const theme = THEME[edition.id];
+  const theme = THEMES[rank === 0 ? 0 : 1];
 
   return (
     <article
@@ -111,7 +116,7 @@ function Panel({ edition, onChoose }: { edition: Edition; onChoose: (id: Edition
       </div>
 
       <div className="flex flex-1 flex-col p-6 sm:p-8 md:p-6 lg:p-10">
-        <p className="text-sm text-warm/60">Grand Theft Auto VI</p>
+        <p className="text-sm text-warm/60">{product.title}</p>
         <h3 id={`compare-${edition.id}`} className="mt-1 font-display text-[clamp(2rem,1rem+2.2vw,3.75rem)] leading-[0.9] font-extrabold uppercase">
           {edition.name}
         </h3>
@@ -134,19 +139,23 @@ function Panel({ edition, onChoose }: { edition: Edition; onChoose: (id: Edition
           </button>
         </div>
 
-        {editionContents.verified && <Contents edition={edition} id={`contents-${edition.id}`} />}
+        {contents.length > 0 && <Contents edition={edition} theme={theme} id={`contents-${edition.id}`} />}
       </div>
     </article>
   );
 }
 
 /**
- * Edition comparison: two editorial panels with verified contents (Rockstar store,
- * rendered check/cross marks). Selection and prices are shared with the configurator;
+ * Edition comparison: one editorial panel per edition, most complete first, with the contents
+ * from Admin → Catalogue (check/cross marks). Selection and prices are shared with the configurator;
  * choosing returns the visitor to it.
  */
 export function CompareEditions() {
+  // Wording from Admin → Content (defaults in src/config/content.ts).
+  const copy = useCopy();
+  const compareCopy = copy.compare;
   const { platform, setEdition, editions, platforms } = usePurchase();
+  const catalog = useCatalog();
 
   const choose = (id: EditionId) => {
     setEdition(id);
@@ -155,7 +164,7 @@ export function CompareEditions() {
     document.querySelector<HTMLInputElement>(`[data-edition-radio="${id}"]`)?.focus({ preventScroll: true });
   };
 
-  const ordered = ORDER.map((id) => editions.find((e) => e.id === id)).filter((e): e is Edition => Boolean(e));
+  const ordered = byCompleteness(catalog, editions);
 
   return (
     <section id="compare" aria-labelledby="compare-title" className="relative isolate bg-band py-section">
@@ -170,7 +179,7 @@ export function CompareEditions() {
             <p className="mt-3 font-display text-title font-extrabold text-warm/70">{compareCopy.subheading}</p>
           </div>
           <div className="lg:col-span-5">
-            <p className="max-w-[28rem] text-warm/70">{compareCopy.lead}</p>
+            <p className="max-w-[28rem] text-warm/70">{editionsLine(catalog)?.text ?? "See what each edition includes, side by side."}</p>
             {platforms.length > 1 && (
               <p className="mt-3 text-sm text-warm/55">
                 Prices shown for <span className="font-semibold text-warm/85">{platform.name}</span>.
@@ -179,9 +188,9 @@ export function CompareEditions() {
           </div>
         </div>
 
-        <div className="mt-12 grid gap-5 md:grid-cols-2 lg:mt-16 lg:gap-8">
-          {ordered.map((e) => (
-            <Panel key={e.id} edition={e} onChoose={choose} />
+        <div className={cn("mt-12 grid gap-5 md:grid-cols-2 lg:mt-16 lg:gap-8", ordered.length >= 3 && "xl:grid-cols-3")}>
+          {ordered.map((e, i) => (
+            <Panel key={e.id} edition={e} rank={i} onChoose={choose} />
           ))}
         </div>
       </Container>

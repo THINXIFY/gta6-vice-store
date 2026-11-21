@@ -170,9 +170,21 @@ export async function reviewAction(form: FormData) {
 export async function walletAction(form: FormData) {
   const me = await requireAdmin("owner");
   const ip = await requestIpHash();
-  await run("/admin/wallets", "Wallet saved.", () =>
-    admin.updateWallet(me, { asset: text(form, "asset", 10), network: text(form, "network", 20), address: text(form, "address", 200), active: flag(form, "active"), validated: flag(form, "validated"), live: flag(form, "live") }, ip),
-  );
+  await run("/admin/wallets", "Wallet saved.", async () => {
+    await admin.updateWallet(me, { asset: text(form, "asset", 10), network: text(form, "network", 20), address: text(form, "address", 200), active: flag(form, "active"), validated: flag(form, "validated"), live: flag(form, "live") }, ip);
+    // Checkout offers methods from the database (catalogue), so refresh every page.
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function addWalletAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const [asset = "", network = ""] = text(form, "method", 40).split(":");
+  await run("/admin/wallets", "Payment method added. Enter its receiving address.", async () => {
+    await admin.addWallet(me, { asset, network }, ip);
+    revalidatePath("/", "layout");
+  });
 }
 
 export async function priceAction(form: FormData) {
@@ -184,13 +196,243 @@ export async function priceAction(form: FormData) {
   });
 }
 
-export async function platformAction(form: FormData) {
+
+// ── Catalogue (WL-2): product, editions, platforms, edition contents ─────────
+
+const CATALOGUE = "/admin/pricing";
+
+export async function productAction(form: FormData) {
   const me = await requireAdmin("owner");
   const ip = await requestIpHash();
-  await run("/admin/pricing", "Platform updated.", async () => {
-    await admin.setPlatformActive(me, text(form, "platformId", 40), flag(form, "active"), ip);
+  await run(CATALOGUE, "Product saved.", async () => {
+    await admin.updateProduct(me, { title: text(form, "title", 200), shortTitle: text(form, "shortTitle", 80) }, ip);
     revalidatePath("/", "layout");
   });
+}
+
+export async function editionAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 60) || undefined;
+  await run(CATALOGUE, id ? "Edition saved." : "Edition added.", async () => {
+    await admin.saveEdition(
+      me,
+      {
+        id,
+        name: text(form, "name", 200),
+        summary: text(form, "summary", 1000),
+        shortSummary: text(form, "shortSummary", 200),
+        recommended: flag(form, "recommended"),
+        sort: text(form, "sort", 6),
+        active: flag(form, "active"),
+      },
+      ip,
+    );
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function platformEditAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 60) || undefined;
+  await run(CATALOGUE, id ? "Platform saved." : "Platform added.", async () => {
+    await admin.savePlatform(
+      me,
+      {
+        id,
+        name: text(form, "name", 200),
+        shortName: text(form, "shortName", 100),
+        sort: text(form, "sort", 6),
+        redeemLabel: text(form, "redeemLabel", 200),
+        redeemUrl: text(form, "redeemUrl", 600),
+        redeemSteps: text(form, "redeemSteps", 3000),
+        active: flag(form, "active"),
+      },
+      ip,
+    );
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function editionItemAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 60) || undefined;
+  await run(CATALOGUE, id ? "Item saved." : "Item added.", async () => {
+    await admin.saveEditionItem(
+      me,
+      { id, category: text(form, "category", 200), name: text(form, "name", 400), editionIds: form.getAll("editionIds").map(String), sort: text(form, "sort", 6) },
+      ip,
+    );
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function deleteEditionItemAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run(CATALOGUE, "Item removed.", async () => {
+    await admin.deleteEditionItem(me, text(form, "id", 60), ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+// ── Homepage layout (WL-3) ───────────────────────────────────────────────────
+
+const HOMEPAGE = "/admin/homepage";
+
+export async function homeBlockAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run(HOMEPAGE, "Homepage saved.", async () => {
+    await admin.saveHomeBlock(me, { id: text(form, "id", 40), enabled: flag(form, "enabled"), nav: text(form, "nav", 60) }, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function moveHomeBlockAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const direction = text(form, "direction", 4) === "up" ? "up" : "down";
+  await run(HOMEPAGE, "Order updated.", async () => {
+    await admin.moveHomeBlock(me, text(form, "id", 40), direction, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function resetHomeAction() {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run(HOMEPAGE, "Homepage reset to the default layout.", async () => {
+    await admin.resetHome(me, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+// ── Content (WL-4) ───────────────────────────────────────────────────────────
+
+const contentPath = (tab: string, anchor = "") => `/admin/content?tab=${tab}${anchor ? `&at=${encodeURIComponent(anchor)}` : ""}`;
+
+export async function copyAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const section = text(form, "section", 40);
+  const fields = Object.fromEntries([...form.entries()].filter(([k]) => k.startsWith("f:")).map(([k, v]) => [k.slice(2), String(v).slice(0, 2000)]));
+  await run(contentPath("text", section), "Wording saved.", async () => {
+    await admin.saveCopy(me, section, fields, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function resetCopyAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const section = text(form, "section", 40);
+  await run(contentPath("text", section), "Wording reset to the default.", async () => {
+    await admin.resetCopy(me, section, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function faqAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 80) || undefined;
+  await run(contentPath("faq"), id ? "Question saved." : "Question added.", async () => {
+    await admin.saveFaq(
+      me,
+      {
+        id,
+        group: text(form, "group", 20),
+        question: text(form, "question", 400),
+        answer: text(form, "answer", 3000),
+        published: flag(form, "published"),
+        checkoutOnly: flag(form, "checkoutOnly"),
+        source: text(form, "source", 400),
+      },
+      ip,
+    );
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function deleteFaqAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run(contentPath("faq"), "Question removed.", async () => {
+    await admin.deleteFaq(me, text(form, "id", 80), ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function moveFaqAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run(contentPath("faq"), "Order updated.", async () => {
+    await admin.moveFaq(me, text(form, "id", 80), text(form, "direction", 4) === "up" ? "up" : "down", ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function noteAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 80) || undefined;
+  await run(contentPath("notes"), id ? "Note saved." : "Note added.", async () => {
+    await admin.saveNote(me, { id, title: text(form, "title", 200), body: text(form, "body", 800), published: flag(form, "published") }, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function deleteNoteAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run(contentPath("notes"), "Note removed.", async () => {
+    await admin.deleteNote(me, text(form, "id", 80), ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function pageAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 40);
+  await run(contentPath("pages", id), "Page saved.", async () => {
+    await admin.savePage(
+      me,
+      id,
+      {
+        title: text(form, "title", 200),
+        heading: text(form, "heading", 300),
+        description: text(form, "description", 400),
+        intro: text(form, "intro", 3000),
+        sections: String(form.get("sections") ?? "").slice(0, 50_000),
+        updated: text(form, "updated", 10),
+      },
+      ip,
+    );
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function publishAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 40);
+  const publish = flag(form, "publish");
+  await run(contentPath("pages", id), publish ? "Page published." : "Page unpublished.", async () => {
+    await admin.setPagePublished(me, id, publish, ip);
+    revalidatePath("/", "layout");
+  });
+}
+
+export async function emailIdentityAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  await run("/admin/emails", "Sender settings saved.", () =>
+    admin.saveEmailIdentity(me, { fromName: text(form, "fromName", 120), replyTo: text(form, "replyTo", 200), adminNotify: text(form, "adminNotify", 2000) }, ip),
+  );
 }
 
 export async function addInventoryAction(form: FormData) {

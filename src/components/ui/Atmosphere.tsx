@@ -42,7 +42,7 @@ export function NeonRule({ className }: { className?: string }) {
     <div aria-hidden className={cn("pointer-events-none relative h-px", className)}>
       <div
         data-neon-rule
-        className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgb(178_140_255/0.55)_22%,var(--color-vice)_50%,rgb(255_155_98/0.6)_78%,transparent_100%)] shadow-[0_0_22px_2px_rgb(255_87_154/0.4)]"
+        className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,color-mix(in_oklab,var(--color-lavender)_55%,transparent)_22%,var(--color-vice)_50%,color-mix(in_oklab,var(--color-sunset)_60%,transparent)_78%,transparent_100%)] shadow-[0_0_22px_2px_color-mix(in_oklab,var(--color-vice)_40%,transparent)]"
       />
     </div>
   );

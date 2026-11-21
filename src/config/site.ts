@@ -1,40 +1,26 @@
+import { brand } from "@/brand/brand";
+
 /**
- * Brand, domain and seller details: the single source for names, URLs and SEO copy.
- * Seller fields stay empty until the business details are confirmed.
+ * Site settings. Identity (name, wordmark, tagline, title, description, locale, seller,
+ * support) comes from this client's src/brand/brand.ts; structure (nav, pages) lives here.
  */
 export const site = {
-  /** Brand name (pending trademark clearance). Rendered as a wordmark by <Wordmark>. */
-  name: "VICE STORE",
-  /** The two parts of the wordmark: first in white, second in the sunset gradient. */
-  wordmark: ["VICE", "STORE"],
-  tagline: "Unlock your next adventure.",
+  name: brand.name,
+  wordmark: brand.wordmark,
+  tagline: brand.tagline,
   /**
    * Canonical origin: set NEXT_PUBLIC_SITE_URL per environment (canonical URLs, Open Graph,
    * sitemap, structured data and email links all derive from it). Choose a domain that does
    * not use Rockstar or Take-Two trademarks, so it never implies affiliation.
    */
   url: (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/+$/, ""),
-  /** Default page title and description (SEO). */
-  title: "GTA VI Standard & Ultimate Editions",
-  locale: "en-US",
-  seller: {
-    legalName: "", // e.g. "Example Trading Ltd"
-    supportEmail: "",
-    country: "",
-  },
-  /** In-page navigation. Every `href` must match a section id on the page. */
-  nav: [
-    { label: "Home", href: "#overview" },
-    { label: "Editions", href: "#editions" },
-    { label: "Explore", href: "#explore" },
-    { label: "Trailers", href: "#trailers" },
-    { label: "FAQ", href: "#faq" },
-  ],
+  title: brand.title,
+  locale: brand.locale,
+  seller: brand.seller,
+  /** The menu comes from the enabled home page blocks (Admin → Homepage; src/server/home.ts). */
   purchaseHref: "#editions",
-  /** Footer description. Keep factual. */
-  description: "An independent store for Grand Theft Auto VI on PlayStation 5 and Xbox Series X|S. Compare editions, choose your platform and see Leonida before you buy.",
-  /** Customer support destinations. Empty = not shown on the live site (never a dead link). */
-  support: { url: "", email: "" },
+  description: brand.description,
+  support: brand.support,
   /**
    * Information pages. Content lives in server-only src/config/legal.ts. An unpublished page
    * renders only in content preview (marked draft, noindex) and 404s on the live site, and its
@@ -48,9 +34,6 @@ export const site = {
     refunds: { href: "/refund-policy", label: "Refund Policy", published: false },
     cookies: { href: "/cookies", label: "Cookie Policy", published: false },
   },
-  shortDisclaimer: "Independent retailer. Not affiliated with Rockstar Games.",
-  disclaimer:
-    "Independent retailer. Not affiliated with, endorsed or sponsored by Rockstar Games or Take-Two Interactive. Grand Theft Auto and related marks are trademarks of Take-Two Interactive Software, Inc.",
 } as const satisfies { pages: Record<string, { href: string; label: string; published: boolean }> } & Record<string, unknown>;
 
 export type PageId = keyof typeof site.pages;

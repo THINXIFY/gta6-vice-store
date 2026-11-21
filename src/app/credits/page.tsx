@@ -6,12 +6,11 @@ import type { ReactNode } from "react";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Layout";
 import { mediaCredits, trailerEmbeds, trailers } from "@/config/media";
-import { site } from "@/config/site";
 import { isUsable } from "@/lib/media";
 
 export const metadata: Metadata = {
   title: "Media credits",
-  description: "Credits for the Grand Theft Auto VI imagery, artwork and trailers shown on this independent store, with copyright and trademark notices.",
+  description: "Credits for the Grand Theft Auto VI imagery, artwork and trailers shown on this store, with copyright and trademark notices.",
   alternates: { canonical: "/credits" },
 };
 
@@ -119,9 +118,6 @@ export default function CreditsPage() {
             </div>
           </Block>
 
-          <Block id="credits-independent" title="Independent retailer">
-            <p className="max-w-[44rem] text-lead text-warm/80">{site.disclaimer}</p>
-          </Block>
         </Container>
       </main>
       <Footer base="/" />

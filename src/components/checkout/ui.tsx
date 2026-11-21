@@ -1,7 +1,8 @@
 "use client";
 
-import { Check, Copy, FlaskConical } from "lucide-react";
+import { Check, Copy, Download, FlaskConical } from "lucide-react";
 import { useMemo, useState, type ReactNode } from "react";
+import { useCopy } from "@/components/ContentProvider";
 import { encodeQr, qrPath } from "@/lib/qr";
 import { cn } from "@/lib/utils";
 
@@ -22,7 +23,7 @@ export function CopyButton({ value, label, className }: { value: string; label: 
       }}
       className={cn(
         "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-control px-3.5 text-xs font-semibold transition-colors duration-300",
-        done ? "bg-[#1f3d2f] text-[#7be3ae]" : "bg-warm/10 text-warm hover:bg-warm/18",
+        done ? "bg-success-deep text-success" : "bg-warm/10 text-warm hover:bg-warm/18",
         className,
       )}
     >
@@ -35,13 +36,13 @@ export function CopyButton({ value, label, className }: { value: string; label: 
 
 /** Marks test orders and test data. */
 export function TestBadge() {
-  return <span className="rounded-control border border-[#ffd400]/40 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold tracking-normal text-[#ffe680]">Test order</span>;
+  return <span className="rounded-control border border-warning/40 px-2 py-0.5 font-sans text-[0.6875rem] font-semibold tracking-normal text-warning-soft">Test order</span>;
 }
 
 /** Persistent, unmistakable marker that nothing here is real. */
 export function PreviewBanner({ children }: { children: ReactNode }) {
   return (
-    <div role="note" data-checkout-preview className="flex items-start gap-3 rounded-xl border border-[#ffd400]/30 bg-[#ffd400]/[0.07] px-4 py-3 text-sm text-[#ffe680]">
+    <div role="note" data-checkout-preview className="flex items-start gap-3 rounded-xl border border-warning/30 bg-warning/[0.07] px-4 py-3 text-sm text-warning-soft">
       <FlaskConical aria-hidden className="mt-0.5 size-4 shrink-0" />
       <p>{children}</p>
     </div>
@@ -73,6 +74,28 @@ export function PaymentQr({ value, label, className }: { value: string; label: s
       <svg viewBox={`-4 -4 ${n} ${n}`} className="block size-full" shapeRendering="crispEdges" role="img" aria-label={label} data-qr-value={value}>
         <path d={qrPath(qr)} fill="#08080d" />
       </svg>
+    </div>
+  );
+}
+
+/**
+ * How the game is delivered, said the same way on every checkout page. Accurate to the flow: the
+ * game-ready email carries a private link (not the code); the order page shows the code and how to
+ * redeem it; the full game downloads from the console store.
+ */
+export function DeliveryNote({ className }: { className?: string }) {
+  const { delivery } = useCopy();
+  return (
+    <div data-delivery-note className={cn("flex gap-4 rounded-xl border border-success/20 bg-success/[0.05] px-5 py-4", className)}>
+      <span aria-hidden className="grid size-10 shrink-0 place-items-center rounded-full bg-success/12 text-success">
+        <Download className="size-4.5" />
+      </span>
+      <div className="text-sm">
+        <p className="font-semibold text-warm">{delivery.title}</p>
+        <p className="mt-1 leading-relaxed text-warm/65">
+          {delivery.body}
+        </p>
+      </div>
     </div>
   );
 }

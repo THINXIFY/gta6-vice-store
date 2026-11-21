@@ -9,7 +9,7 @@ export default async function LoginPage() {
   if (await currentAdmin()) redirect("/admin");
   return (
     <main id="main" className="relative isolate grid min-h-svh place-items-center overflow-hidden px-4">
-      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(50%_45%_at_25%_15%,rgb(255_87_154/0.14),transparent_70%),radial-gradient(45%_40%_at_80%_85%,rgb(178_140_255/0.12),transparent_70%)]" />
+      <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(50%_45%_at_25%_15%,color-mix(in_oklab,var(--color-vice)_14%,transparent),transparent_70%),radial-gradient(45%_40%_at_80%_85%,color-mix(in_oklab,var(--color-lavender)_12%,transparent),transparent_70%)]" />
       <div className="w-full max-w-sm">
         <p>
           <Wordmark className="text-4xl" />

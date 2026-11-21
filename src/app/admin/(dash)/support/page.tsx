@@ -48,7 +48,7 @@ export default async function SupportPage({ searchParams }: { searchParams: Sear
                   <p className="flex flex-wrap items-center gap-2 text-sm">
                     <span className="font-mono text-[0.8125rem] text-sunset">{m.reference}</span>
                     <span className="rounded-full bg-panel-2 px-2 py-0.5 text-xs text-warm/70">{SUPPORT_TOPICS[m.topic as SupportTopic] ?? m.topic}</span>
-                    {m.status === "resolved" && <span className="rounded-full bg-[#7be3ae]/15 px-2 py-0.5 text-xs font-semibold text-[#9ef0c4]">Resolved</span>}
+                    {m.status === "resolved" && <span className="rounded-full bg-success/15 px-2 py-0.5 text-xs font-semibold text-success-soft">Resolved</span>}
                     {m.isTest && <TestPill />}
                   </p>
                   <p className="mt-2 font-medium">
@@ -78,7 +78,7 @@ export default async function SupportPage({ searchParams }: { searchParams: Sear
                   <input type="hidden" name="id" value={m.id} />
                   <input type="hidden" name="status" value={m.status === "open" ? "resolved" : "open"} />
                   <button className="inline-flex h-9 items-center gap-2 rounded-lg border border-line-strong bg-panel-2 px-3.5 text-sm font-semibold hover:border-lavender/35">
-                    {m.status === "open" ? <CheckCircle2 aria-hidden className="size-4 text-[#9ef0c4]" /> : <RotateCcw aria-hidden className="size-4" />}
+                    {m.status === "open" ? <CheckCircle2 aria-hidden className="size-4 text-success-soft" /> : <RotateCcw aria-hidden className="size-4" />}
                     {m.status === "open" ? "Mark resolved" : "Reopen"}
                   </button>
                 </form>

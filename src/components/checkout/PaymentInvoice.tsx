@@ -4,7 +4,8 @@ import { AlertTriangle, Clock, KeyRound } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { assets } from "@/config/payments";
-import { editions, game, platforms } from "@/config/product";
+import { useCatalog } from "@/components/CatalogProvider";
+import { editionName, platformName } from "@/lib/catalog";
 import { formatPrice } from "@/lib/pricing";
 import { networkLabel } from "@/lib/orders/methods";
 import { paymentUri } from "@/lib/orders/paymentUri";
@@ -13,7 +14,7 @@ import type { Order } from "@/lib/orders/types";
 import { cn } from "@/lib/utils";
 import { CoinIcon } from "./CoinIcon";
 import { SubmitForm, Submitted } from "./SubmitProof";
-import { PaymentQr, TestBadge, ValueRow } from "./ui";
+import { DeliveryNote, PaymentQr, TestBadge, ValueRow } from "./ui";
 
 
 /** Ticking clock; remaining time is derived, so a late-arriving `until` is never misread as expired. */
@@ -30,6 +31,7 @@ function useCountdown(until: string | undefined) {
 
 /** Manual crypto invoice: exact amount, address, network warning, then TXID submission. */
 export function PaymentInvoice({ paymentId }: { paymentId: string }) {
+  const catalog = useCatalog();
   const [order, setOrder] = useState<Order | null | undefined>(undefined);
   useEffect(() => {
     orderStore.get(paymentId).then(setOrder);
@@ -51,19 +53,20 @@ export function PaymentInvoice({ paymentId }: { paymentId: string }) {
   if (order.status !== "awaiting_payment" && order.status !== "order_expired") return <Submitted order={order} />;
 
   const asset = assets.find((a) => a.id === order.quote.asset)!;
-  const ed = editions.find((e) => e.id === order.edition)!;
-  const pf = platforms.find((p) => p.id === order.platform)!;
+  const ed = { name: editionName(catalog, order.edition) };
+  const pf = { name: platformName(catalog, order.platform) };
   const net = networkLabel(order.quote.network);
   const expired = order.status === "order_expired" || countdown.expired;
   const qr = paymentUri(asset.id, order.quote.network, order.address ?? "", order.quote.amount);
-  const sample = !order.address || order.address.startsWith("PREVIEW-");
+  // Test orders never look payable, even when the method carries a real address.
+  const sample = order.test || !order.address || order.address.startsWith("PREVIEW-");
 
   return (
     <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
       {/* Invoice */}
       <section aria-labelledby="invoice-title" className="lg:col-span-7">
         <div className="overflow-hidden rounded-media border border-warm/10 bg-midnight/60">
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-warm/10 bg-[linear-gradient(100deg,rgb(255_87_154/0.12),rgb(255_155_98/0.08)_60%,transparent)] px-6 py-5 sm:px-8">
+          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-warm/10 bg-[linear-gradient(100deg,color-mix(in_oklab,var(--color-vice)_12%,transparent),color-mix(in_oklab,var(--color-sunset)_8%,transparent)_60%,transparent)] px-6 py-5 sm:px-8">
             <div>
               <p className="text-xs text-warm/55">Payment ID</p>
               <p id="invoice-title" className="mt-0.5 flex items-center gap-3 font-mono text-lg tracking-wide">
@@ -71,7 +74,7 @@ export function PaymentInvoice({ paymentId }: { paymentId: string }) {
                 {order.test && <TestBadge />}
               </p>
             </div>
-            <p className={cn("inline-flex items-center gap-2 rounded-control px-3.5 py-1.5 text-sm font-medium", expired ? "bg-vice/15 text-[#ff9fc4]" : "bg-obsidian/70 text-warm/80")}>
+            <p className={cn("inline-flex items-center gap-2 rounded-control px-3.5 py-1.5 text-sm font-medium", expired ? "bg-vice/15 text-danger-soft" : "bg-obsidian/70 text-warm/80")}>
               <Clock aria-hidden className="size-4" />
               {expired ? "Quote expired" : <span aria-live="off">Amount held for {countdown.text}</span>}
             </p>
@@ -101,7 +104,7 @@ export function PaymentInvoice({ paymentId }: { paymentId: string }) {
               />
               <figcaption className="mt-2.5 text-center text-xs leading-snug text-warm/55 sm:text-left">
                 {sample
-                  ? "Sample address for testing. Do not send funds."
+                  ? "Test order. Do not send funds."
                   : qr.includesAmount
                     ? "Includes the address and exact amount. Check both in your wallet."
                     : "Scan for the address, then enter the exact amount yourself."}
@@ -115,7 +118,7 @@ export function PaymentInvoice({ paymentId }: { paymentId: string }) {
             <ValueRow label="Payment ID" value={order.paymentId} />
           </div>
 
-          <div role="alert" className="flex gap-3 border-t border-vice/25 bg-vice/[0.08] px-6 py-4 text-sm text-[#ffc2da] sm:px-8">
+          <div role="alert" className="flex gap-3 border-t border-vice/25 bg-vice/[0.08] px-6 py-4 text-sm text-danger-pale sm:px-8">
             <AlertTriangle aria-hidden className="mt-0.5 size-4.5 shrink-0" />
             <p>
               Send {asset.id} on <strong>{net}</strong> only. Payments sent on another network or in another coin may be lost and cannot be recovered.
@@ -145,7 +148,8 @@ export function PaymentInvoice({ paymentId }: { paymentId: string }) {
               </li>
             ))}
           </ol>
-          <p className="mt-5 flex items-start gap-2.5 rounded-xl bg-warm/[0.04] px-4 py-3 text-sm text-warm/60">
+          <DeliveryNote className="mt-5" />
+          <p className="mt-3 flex items-start gap-2.5 rounded-xl bg-warm/[0.04] px-4 py-3 text-sm text-warm/60">
             <KeyRound aria-hidden className="mt-0.5 size-4 shrink-0 text-sunset" />
             We will never ask for your private keys or recovery phrase.
           </p>
@@ -154,7 +158,7 @@ export function PaymentInvoice({ paymentId }: { paymentId: string }) {
         <div className="rounded-xl border border-warm/10 px-5 py-4 text-sm">
           <p className="text-warm/50">Your order</p>
           <p className="mt-1 font-semibold">
-            {game.title}, {ed.name}
+            {catalog.product.title}, {ed.name}
           </p>
           <p className="text-warm/60">{pf.name}</p>
         </div>

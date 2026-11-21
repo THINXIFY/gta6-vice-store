@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { useId } from "react";
 import { editionArt } from "@/config/media";
-import { editions } from "@/config/product";
+import { useCatalog } from "@/components/CatalogProvider";
 import { isUsable } from "@/lib/media";
 import type { EditionId, PlatformId } from "@/config/types";
 import { glitter, HORIZON, skyline, skylinePath, SUN, VIEWBOX } from "../hero/sceneGeometry";
@@ -11,12 +11,12 @@ import { cn } from "@/lib/utils";
 
 /**
  * Edition artwork. Uses licensed art from `editionArt` when present; otherwise an
- * original drawn key frame with a distinct palette per edition:
- * Standard = blue hour (lavender), Ultimate = golden hour (sunset).
+ * original drawn key frame with a distinct palette per edition, by position in the catalogue:
+ * the first edition gets blue hour (lavender), the next golden hour (sunset), and so on.
  */
 
-const PALETTES = {
-  standard: {
+const PALETTES = [
+  {
     sky: ["#06070d", "#0c0d1f", "#1b1840", "#36296a", "#6f53a8", "#b99bf2", "#ecdcff"],
     halo: "#d7c2ff",
     sun: ["#ffffff", "#efe4ff", "#c9b2ff"],
@@ -25,7 +25,7 @@ const PALETTES = {
     water: ["#31265c", "#1b1534", "#0e0c19", "#08080d"],
     glint: "#efe2ff",
   },
-  ultimate: {
+  {
     sky: ["#07070c", "#100c1b", "#24122f", "#56204a", "#a33a62", "#e2666a", "#ffa679"],
     halo: "#ffc89c",
     sun: ["#fff6ea", "#ffe0bd", "#ffbf8f"],
@@ -34,7 +34,7 @@ const PALETTES = {
     water: ["#4b2042", "#2a1330", "#130c1a", "#08080d"],
     glint: "#ffd8b0",
   },
-} as const satisfies Record<EditionId, unknown>;
+] as const;
 
 const SKY_STOPS = [0, 0.3, 0.55, 0.74, 0.87, 0.95, 1];
 const NUMERAL_STOPS = [0, 0.42, 0.72, 1];
@@ -52,19 +52,20 @@ export function findEditionArt(edition: EditionId, platform: PlatformId) {
 }
 
 /** True when every edition has usable supplied art for this platform (drawn art otherwise). */
-export function hasEditionArt(platform: PlatformId) {
-  return editions.every((e) => findEditionArt(e.id, platform));
+export function hasEditionArt(editionIds: EditionId[], platform: PlatformId) {
+  return editionIds.every((id) => findEditionArt(id, platform));
 }
 
 export function EditionArt({ edition, platform, className, sizes = "50vw" }: { edition: EditionId; platform: PlatformId; className?: string; sizes?: string }) {
   const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const { editions } = useCatalog();
   const licensed = findEditionArt(edition, platform);
 
   if (licensed) {
     return <Image src={licensed.image.src} alt="" fill sizes={sizes} className={cn("object-cover", className)} />;
   }
 
-  const p = PALETTES[edition];
+  const p = PALETTES[Math.max(0, editions.findIndex((e) => e.id === edition)) % PALETTES.length]!;
   const id = (name: string) => `${uid}-${name}`;
 
   return (

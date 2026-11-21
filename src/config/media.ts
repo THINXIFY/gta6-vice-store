@@ -41,8 +41,8 @@ const viceCitySign: MediaItem = {
 const heroNight: MediaItem = {
   id: "hero-night",
   kind: "image",
-  alt: "Jason and Lucia on a silver sports car on a neon-lit Vice City waterfront at dusk, the Grand Theft Auto VI logo glowing above",
-  src: A + "gta-hero-home-new.png",
+  alt: "A neon-lit Vice City beachfront boulevard at night: a sports car on the wet road, palm trees, the Oceanview Hotel and the Grand Theft Auto VI logo over the skyline",
+  src: A + "gta-hero-home-new-1.png",
   width: 1672,
   height: 941,
   license: "pending",
@@ -52,8 +52,8 @@ const heroNight: MediaItem = {
 export const heroArt: HeroArt = {
   desktop: heroNight,
   mobile: heroNight,
-  // Keep the characters, car and logo (right side) in frame on every crop.
-  focus: { desktop: "68% 50%", mobile: "95% 52%" },
+  // Desktop: the full boulevard with the logo on the right. Phones: the logo and the road.
+  focus: { desktop: "62% 50%", mobile: "88% 50%" },
   includesLogo: true,
 };
 
@@ -93,15 +93,15 @@ export const editionArt: EditionArtItem[] = [
 /** World showcase (Explore). `caption` names only what is visible or officially named. */
 export const showcase: (MediaItem & { caption: string })[] = [
   {
-    id: "vice-city-09",
+    id: "vice-city-sunset",
     kind: "image",
-    alt: "A Vice City street under a mural-covered overpass, with motorbikes and a classic car",
-    caption: "Vice City streets",
-    src: `${A}imgi_154_09_-_Vice_City_09.jpg`,
-    width: 3840,
-    height: 2160,
-    sourceUrl: SITE,
-    ...rockstar,
+    alt: "Aerial view of Vice City at sunset: the downtown skyline across the bay, neon hotels and a palm-lined boulevard beside the beach",
+    caption: "Vice City at sunset",
+    src: `${A}city-view.png`,
+    width: 1672,
+    height: 941,
+    license: "pending",
+    credit: "Supplied artwork (source unconfirmed)",
   },
   {
     id: "boobie-ike-02",
@@ -115,6 +115,44 @@ export const showcase: (MediaItem & { caption: string })[] = [
     ...rockstar,
   },
 ];
+
+/** Helicopter that flies across the Explore sky with scroll (animated GIF, transparent; decorative). */
+export const exploreHelicopter: MediaItem = {
+  id: "explore-helicopter",
+  kind: "image",
+  alt: "",
+  src: `${A}helicaptor-gif.gif`,
+  width: 491,
+  height: 193,
+  license: "pending",
+  credit: "Supplied animation (source unconfirmed)",
+};
+
+/**
+ * Background art per region tile in Explore, keyed by region id. Only an image that actually
+ * shows that region belongs here (never a stand-in from elsewhere). Empty src = the tile keeps
+ * its tonal look. `focus` = object-position for the tile crop.
+ */
+const regionScene = (id: string, focus: string): MediaItem & { focus: string } => ({
+  id: `region-${id}`,
+  kind: "image",
+  alt: "",
+  src: `${A}region-${id}.png`,
+  width: 1672,
+  height: 941,
+  license: "pending",
+  credit: "Supplied artwork (source unconfirmed)",
+  focus,
+});
+
+export const regionArt: Record<string, MediaItem & { focus?: string }> = {
+  "vice-city": { ...showcase[0]!, alt: "", focus: "50% 45%" },
+  "leonida-keys": regionScene("leonida-keys", "40% 55%"),
+  grassrivers: regionScene("grassrivers", "42% 55%"),
+  "port-gellhorn": regionScene("port-gellhorn", "45% 50%"),
+  ambrosia: regionScene("ambrosia", "38% 45%"),
+  "mount-kalaga": regionScene("mount-kalaga", "35% 50%"),
+};
 
 /**
  * Character key art (official, 1280×720; the Launch Trailer's poster). The left 742px hold
@@ -210,9 +248,15 @@ export const gallery: GalleryItem[] = [
 
 /** Every supplied asset in use, with where it appears. Drives /credits. */
 export const mediaCredits: { item: MediaItem; title: string; usedIn: string }[] = [
-  { item: heroNight, title: "Hero key frame (night waterfront)", usedIn: "Hero" },
+  { item: heroNight, title: "Hero key frame (Vice City beachfront at night)", usedIn: "Hero" },
   { item: viceCitySign, title: "Vice City sign at dusk", usedIn: "Gallery" },
-  { item: showcase[0]!, title: "Vice City streets", usedIn: "Life in Leonida, gallery" },
+  { item: showcase[0]!, title: "Vice City at sunset (aerial view)", usedIn: "Explore, gallery" },
+  { item: exploreHelicopter, title: "Helicopter animation", usedIn: "Explore" },
+  { item: regionArt["leonida-keys"]!, title: "Leonida Keys scene", usedIn: "Explore regions" },
+  { item: regionArt["grassrivers"]!, title: "Grassrivers scene", usedIn: "Explore regions" },
+  { item: regionArt["port-gellhorn"]!, title: "Port Gellhorn scene", usedIn: "Explore regions" },
+  { item: regionArt["ambrosia"]!, title: "Ambrosia scene", usedIn: "Explore regions" },
+  { item: regionArt["mount-kalaga"]!, title: "Mount Kalaga scene", usedIn: "Explore regions" },
   { item: showcase[1]!, title: "Boobie Ike at the Jack of Hearts", usedIn: "Life in Leonida, gallery" },
   { item: characterArt.image, title: "Jason and Lucia key art", usedIn: "Two lives. One story." },
   { item: editionArt[1]!.image, title: "Ultimate Edition artwork", usedIn: "Purchase panel, edition comparison, purchase bar" },

@@ -42,6 +42,9 @@ test("input validation rejects unknown products, methods and bad emails", async 
   expect((await create(request, h, { edition: "deluxe" })).status()).toBe(400);
   expect((await create(request, h, { asset: "DOGE" })).status()).toBe(400);
   expect((await create(request, h, { asset: "BTC", network: "tron" })).status()).toBe(400);
+  // Retired methods (rows may remain in the table) are refused: only the five configured pairs.
+  expect((await create(request, h, { asset: "USDT", network: "polygon" })).status()).toBe(400);
+  expect((await create(request, h, { asset: "USDC", network: "ethereum" })).status()).toBe(400);
   expect((await create(request, h, { email: "not-an-email" })).status()).toBe(400);
   const bad = await request.post("/api/orders", { headers: { ...h, "content-type": "application/json" }, data: "{not json" });
   expect(bad.status()).toBe(400);

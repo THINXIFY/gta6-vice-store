@@ -1,9 +1,15 @@
 import type { DeliveryFormat, Edition, EditionId, Platform, PlatformId, Verifiable } from "./types";
 
 /**
- * Single source of truth for product facts.
+ * Product facts for this client. The catalogue part (platforms, editions, prices, edition
+ * contents) only SEEDS a new database: after that it is managed in Admin → Catalogue and read
+ * from the database (src/server/catalog.ts). Game facts (release, rating, regions, characters)
+ * are still read from here.
  * Rule: never set `verified: true` or a price amount without a confirmed source.
  */
+
+/** Database id of this store's product (catalogue rows hang off it). */
+export const productId = "gta-vi";
 
 export const game = {
   title: "Grand Theft Auto VI",
@@ -20,8 +26,32 @@ export const game = {
 } as const;
 
 export const platforms: readonly Platform[] = [
-  { id: "ps5", name: "PlayStation 5", shortName: "PS5", available: true, verified: true, source: "rockstargames.com/VI" },
-  { id: "xbox-series", name: "Xbox Series X|S", shortName: "Xbox Series X|S", available: true, verified: true, source: "rockstargames.com/VI" },
+  {
+    id: "ps5",
+    name: "PlayStation 5",
+    shortName: "PS5",
+    available: true,
+    verified: true,
+    source: "rockstargames.com/VI",
+    redeem: {
+      label: "Redeem on PlayStation Store",
+      url: "https://store.playstation.com/redeem",
+      steps: ["Sign in to the PlayStation Network account you play on.", "Open Redeem Codes and enter your code.", "Download Grand Theft Auto VI from your Game Library."],
+    },
+  },
+  {
+    id: "xbox-series",
+    name: "Xbox Series X|S",
+    shortName: "Xbox Series X|S",
+    available: true,
+    verified: true,
+    source: "rockstargames.com/VI",
+    redeem: {
+      label: "Redeem on Xbox",
+      url: "https://redeem.microsoft.com",
+      steps: ["Sign in to the Microsoft account you use on your Xbox.", "Enter your code at the redeem page or in the Microsoft Store on your console.", "Install Grand Theft Auto VI from My games & apps."],
+    },
+  },
 ];
 
 export const defaultPlatform: PlatformId = "ps5";
@@ -37,7 +67,7 @@ export const editions: readonly Edition[] = [
     id: "standard",
     name: "Standard Edition",
     summary: "The full game.",
-    contents: { value: ["Grand Theft Auto VI"], verified: false },
+    shortSummary: "The full game",
     prices: { ps5: price(1900), "xbox-series": price(1900) },
   },
   {
@@ -45,10 +75,7 @@ export const editions: readonly Edition[] = [
     name: "Ultimate Edition",
     /** Official wording, rockstargames.com/VI. */
     summary: "An exclusive collection of items threaded across all aspects of Jason and Lucia's story.",
-    contents: {
-      value: ["Grand Theft Auto VI", "Ultimate Edition bonus content (details to be confirmed)"],
-      verified: false,
-    },
+    shortSummary: "Game + 16 extras",
     prices: { ps5: price(3900), "xbox-series": price(3900) },
     recommended: true,
   },
@@ -57,8 +84,12 @@ export const editions: readonly Edition[] = [
 export const deliveryFormats: readonly DeliveryFormat[] = ["digital-code"];
 
 export const commerce = {
-  /** Master switch. Purchase buttons stay inert until checkout exists and is approved. */
-  checkoutEnabled: false,
+  /**
+   * Master switch for real checkout: buy buttons, live orders to the wallets in Admin → Wallets.
+   * Live since 2026-11-21 (owner instruction). Only the isolated e2e build (scripts/e2e.mjs,
+   * own distDir) turns it off, to exercise test orders with sample wallets.
+   */
+  checkoutEnabled: process.env.NEXT_PUBLIC_CHECKOUT_TEST_MODE !== "1",
   currency: CURRENCY,
 } as const;
 

@@ -32,7 +32,9 @@ export function SmoothScroll() {
     let teardown: (() => void) | undefined;
 
     const start = () => {
-      const lenis = new Lenis({ autoRaf: false, anchors: true, lerp: 0.1 });
+      // Slightly calmer than the defaults: each wheel step travels 15% less, with a touch more glide.
+      // Touch keeps the device’s native scrolling.
+      const lenis = new Lenis({ autoRaf: false, anchors: true, lerp: 0.085, wheelMultiplier: 0.85 });
       const tick = (time: number) => lenis.raf(time * 1000);
       lenis.on("scroll", ScrollTrigger.update);
       gsap.ticker.add(tick);

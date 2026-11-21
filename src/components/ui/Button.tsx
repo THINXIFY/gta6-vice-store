@@ -12,11 +12,11 @@ const base =
 
 const variants: Record<Variant, string> = {
   primary: "bg-warm text-obsidian hover:bg-white",
-  accent: "bg-vice text-obsidian hover:bg-[#ff74ad]",
+  accent: "bg-vice text-obsidian hover:bg-vice/85",
   secondary: "bg-warm/10 text-warm hover:bg-warm/16",
   /** Signature purchase CTA. Reserve for the main buy action (header + hero). */
   sunset:
-    "bg-[linear-gradient(100deg,var(--color-vice)_0%,#ff7a7c_45%,var(--color-sunset)_100%)] bg-[length:140%_100%] bg-left text-obsidian hover:bg-right",
+    "bg-[linear-gradient(100deg,var(--color-vice)_0%,var(--color-blend)_45%,var(--color-sunset)_100%)] bg-[length:140%_100%] bg-left text-obsidian hover:bg-right",
 };
 
 const sizes: Record<Size, string> = {

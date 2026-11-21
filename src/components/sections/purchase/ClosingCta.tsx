@@ -6,7 +6,7 @@ import type { MouseEvent } from "react";
 import { getLenis, scrollToHash } from "@/components/motion/SmoothScroll";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Layout";
-import { closingCopy } from "@/config/content";
+import { useCopy } from "@/components/ContentProvider";
 import { closingBackdrop } from "@/config/media";
 import { isUsable } from "@/lib/media";
 import { site } from "@/config/site";
@@ -18,6 +18,9 @@ import { usePurchase } from "./PurchaseContext";
  * the visitor resumes where they left off. No urgency, no claims.
  */
 export function ClosingCta() {
+  // Wording from Admin → Content (defaults in src/config/content.ts).
+  const copy = useCopy();
+  const closingCopy = copy.closing;
   const { edition, platform } = usePurchase();
 
   const go = (e: MouseEvent<HTMLAnchorElement>) => {
@@ -27,7 +30,7 @@ export function ClosingCta() {
   };
 
   return (
-    <section data-closing-cta aria-labelledby="closing-title" className="relative isolate overflow-hidden border-t border-warm/8 bg-obsidian">
+    <section id="closing" data-closing-cta aria-labelledby="closing-title" className="relative isolate scroll-mt-20 overflow-hidden border-t border-warm/8 bg-obsidian">
       {isUsable(closingBackdrop) && (
         <div aria-hidden className="absolute inset-0 -z-20 overflow-hidden">
           <div data-scrub-zoom className="absolute inset-0 will-change-transform">

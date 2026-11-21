@@ -66,7 +66,7 @@ export function PageMotion({ children }: { children: ReactNode }) {
 
   return (
     <div ref={ref}>
-      <div aria-hidden data-scroll-progress className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 origin-left scale-x-0 bg-linear-to-r from-vice via-lavender to-sunset shadow-[0_0_12px_rgb(255_87_154/0.6)]" />
+      <div aria-hidden data-scroll-progress className="pointer-events-none fixed inset-x-0 top-0 z-50 h-0.5 origin-left scale-x-0 bg-linear-to-r from-vice via-lavender to-sunset shadow-[0_0_12px_color-mix(in_oklab,var(--color-vice)_60%,transparent)]" />
       {children}
     </div>
   );

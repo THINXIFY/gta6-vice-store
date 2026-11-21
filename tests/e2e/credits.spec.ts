@@ -11,7 +11,6 @@ test("credits page acknowledges rights holders and stays honest about permission
   await expect(page.getByRole("heading", { level: 1, name: "Media credits" })).toBeVisible();
   const main = page.locator("main");
   await expect(main).toContainText("trademarks of Take-Two Interactive Software, Inc.");
-  await expect(main).toContainText("Not affiliated with, endorsed or sponsored by Rockstar Games");
   await expect(main).toContainText("Crediting a work is not the same as permission");
 
   for (const a of await main.locator('a[target="_blank"]').all()) {

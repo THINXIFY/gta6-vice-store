@@ -3,7 +3,7 @@
 import { AlertCircle, CheckCircle2, Send } from "lucide-react";
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
-import { pageHref } from "@/lib/pages";
+import { usePageHref } from "@/components/ContentProvider";
 
 const TOPICS = [
   { id: "order", label: "An order" },
@@ -20,7 +20,7 @@ const labelCls = "grid gap-2 text-sm font-medium text-warm/80";
 /** Contact form → POST /api/support. Works with keyboard and screen readers; errors are announced. */
 export function ContactForm({ preview }: { preview: boolean }) {
   const [state, setState] = useState<{ status: "idle" | "sending" | "sent" | "error"; message?: string; reference?: string }>({ status: "idle" });
-  const privacy = pageHref("privacy");
+  const privacy = usePageHref()("privacy");
 
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -38,8 +38,8 @@ export function ContactForm({ preview }: { preview: boolean }) {
 
   if (state.status === "sent") {
     return (
-      <div role="status" className="grid justify-items-start gap-3 rounded-media border border-[#7be3ae]/25 bg-[#7be3ae]/[0.06] p-6 sm:p-8">
-        <CheckCircle2 aria-hidden className="size-7 text-[#9ef0c4]" />
+      <div role="status" className="grid justify-items-start gap-3 rounded-media border border-success/25 bg-success/[0.06] p-6 sm:p-8">
+        <CheckCircle2 aria-hidden className="size-7 text-success-soft" />
         <h2 className="text-title font-semibold">Message sent</h2>
         <p className="text-warm/75">
           Your reference is <span className="font-mono text-warm">{state.reference}</span>. We have emailed you a confirmation and will reply to the address you gave.
@@ -50,7 +50,7 @@ export function ContactForm({ preview }: { preview: boolean }) {
 
   return (
     <form onSubmit={submit} noValidate={false} className="grid gap-5 rounded-media border border-warm/10 bg-midnight/60 p-6 sm:p-8">
-      {preview && <p className="rounded-lg bg-[#ffd400]/[0.08] px-3 py-2 text-xs text-[#ffe680]">Preview: messages are saved as test messages.</p>}
+      {preview && <p className="rounded-lg bg-warning/[0.08] px-3 py-2 text-xs text-warning-soft">Preview: messages are saved as test messages.</p>}
       <div className="grid gap-5 sm:grid-cols-2">
         <label className={labelCls}>
           Your name <span className="text-xs font-normal text-warm/45">Optional</span>
@@ -92,7 +92,7 @@ export function ContactForm({ preview }: { preview: boolean }) {
         </label>
       </div>
       {state.status === "error" && (
-        <p role="alert" className="flex items-start gap-2 rounded-lg bg-vice/10 px-3 py-2.5 text-sm text-[#ff9fc4]">
+        <p role="alert" className="flex items-start gap-2 rounded-lg bg-vice/10 px-3 py-2.5 text-sm text-danger-soft">
           <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" />
           {state.message}
         </p>

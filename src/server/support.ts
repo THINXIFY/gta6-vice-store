@@ -3,12 +3,12 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import * as s from "@/db/schema";
 import { paymentIdPattern } from "@/lib/orders/id";
 import { contentPreview } from "@/lib/media";
-import { site } from "@/config/site";
 import type { Admin } from "./auth";
 import { getDb } from "./db";
 import { notifySupport } from "./email";
 import { Conflict } from "./orders";
 import { email as parseEmail, InputError } from "./security";
+import { getPublished } from "./content";
 
 export const SUPPORT_TOPICS = { order: "An order", payment: "A payment", delivery: "Game delivery", refund: "A refund", other: "Something else" } as const;
 export type SupportTopic = keyof typeof SUPPORT_TOPICS;
@@ -22,7 +22,7 @@ const clean = (v: unknown, max: number) => (typeof v === "string" ? v.replace(/[
  * preview (stored as a test message). A filled honeypot is accepted silently and dropped.
  */
 export async function createSupportMessage(body: Record<string, unknown>, ipHash: string): Promise<{ reference: string }> {
-  const published = site.pages.contact.published;
+  const published = (await getPublished()).contact;
   if (!published && !contentPreview) throw new Conflict("The contact form is not available yet.");
   if (clean(body.website, 200)) return { reference: newReference() }; // bot: pretend success, store nothing
 

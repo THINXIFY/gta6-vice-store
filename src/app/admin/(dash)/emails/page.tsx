@@ -2,8 +2,9 @@ import { ExternalLink, MailX, Send } from "lucide-react";
 import { Button, Card, EMAIL_LABELS, EmailStatus, EmptyState, Field, Flash, input, label, PageHeader, RetryButton, when } from "@/components/admin/ui";
 import { checkoutOpen } from "@/lib/checkout";
 import { requireAdmin } from "@/server/auth";
-import { emailLog, emailSettings } from "@/server/email";
-import { retryEmailAction, testEmailAction } from "../../actions";
+import { emailIdentity, emailLog, emailSettings } from "@/server/email";
+import { getContent } from "@/server/content";
+import { retryEmailAction, emailIdentityAction, testEmailAction } from "../../actions";
 
 export const metadata = { title: "Emails" };
 
@@ -13,7 +14,7 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
   const me = await requireAdmin();
   const flash = await searchParams;
   const cfg = emailSettings();
-  const log = await emailLog({ limit: 100 });
+  const [log, id, { email: saved }] = await Promise.all([emailLog({ limit: 100 }), emailIdentity(), getContent()]);
   const modeText =
     cfg.mode === "live"
       ? "Live: emails go to customers."
@@ -34,11 +35,31 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
             <Field k="Mode" v={modeText} />
             {cfg.liveRequested && !checkoutOpen && <Field k="Note" v="EMAIL_MODE=live is ignored while live checkout is disabled." />}
             <Field k="SMTP server" v={cfg.smtp ? `${cfg.smtp.host}:${cfg.smtp.port} (${cfg.smtp.security === "none" ? "unencrypted, local only" : cfg.smtp.security.toUpperCase()})${cfg.smtp.user ? ", authenticated" : ""}` : "Not configured (SMTP_HOST)"} />
-            <Field k="From" v={cfg.from || "Not set (EMAIL_FROM)"} />
-            <Field k="Reply-to" v={cfg.replyTo} />
-            <Field k="Admin alerts" v={cfg.adminNotify.length ? cfg.adminNotify.join(", ") : "All active owners"} />
+            <Field k="From" v={id.from || "Not set (EMAIL_FROM)"} />
+            <Field k="Reply-to" v={id.replyTo} />
+            <Field k="Admin alerts" v={id.adminNotify.length ? id.adminNotify.join(", ") : "All active owners"} />
           </dl>
-          <p className="mt-4 text-xs text-warm/45">Settings come from server environment variables (see .env.example). Passwords are never shown here.</p>
+          <p className="mt-4 text-xs text-warm/45">The mail server, the From address and passwords come from server environment variables (see .env.example) and are never shown or edited here.</p>
+          {me.role === "owner" && (
+            <form action={emailIdentityAction} className="mt-6 grid gap-4 border-t border-line pt-5 sm:grid-cols-2">
+              <p className="text-sm font-semibold sm:col-span-2">Sender</p>
+              <label className={label}>
+                Sender name
+                <input name="fromName" defaultValue={saved.fromName} placeholder={id.name} className={input} />
+              </label>
+              <label className={label}>
+                Reply-to address
+                <input name="replyTo" type="email" defaultValue={saved.replyTo} placeholder={cfg.replyTo || "Same as the From address"} className={input} />
+              </label>
+              <label className={`${label} sm:col-span-2`}>
+                Admin alert recipients (comma separated; empty = all active owners)
+                <input name="adminNotify" defaultValue={saved.adminNotify.join(", ")} placeholder={cfg.adminNotify.join(", ") || "owner@example.com, support@example.com"} className={input} />
+              </label>
+              <div className="sm:col-span-2">
+                <Button variant="secondary">Save sender settings</Button>
+              </div>
+            </form>
+          )}
         </Card>
 
         <div className="grid content-start gap-6">

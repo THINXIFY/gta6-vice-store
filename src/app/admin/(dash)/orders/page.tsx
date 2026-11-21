@@ -1,8 +1,9 @@
-import { Download, SearchX } from "lucide-react";
+import { ChevronRight, Download, SearchX } from "lucide-react";
 import Link from "next/link";
-import { EmptyState, input, PageHeader, Pagination, select, StatusBadge, TestPill, usd, when } from "@/components/admin/ui";
-import { assets, type NetworkId } from "@/config/payments";
-import { editions, platforms } from "@/config/product";
+import { ago, EmptyState, input, PageHeader, Pagination, select, StatusBadge, TestPill, usd, when } from "@/components/admin/ui";
+import { assets, networks, type NetworkId } from "@/config/payments";
+import { editionName as nameOfEdition, platformName as nameOfPlatform, platformShortName } from "@/lib/catalog";
+import { getCatalog } from "@/server/catalog";
 import { networkLabel } from "@/lib/orders/methods";
 import { statusInfo, type OrderStatus } from "@/lib/orders/types";
 import { listOrders, ORDER_SORTS, ORDERS_PER_PAGE } from "@/server/admin";
@@ -22,10 +23,14 @@ const MORE_STATUSES: OrderStatus[] = ["awaiting_payment", "under_review", "game_
 
 type Search = Promise<{ q?: string; status?: string; dataset?: string; asset?: string; sort?: string; page?: string }>;
 
-const editionName = (id: string) => editions.find((e) => e.id === id)?.name.replace(" Edition", "") ?? id;
-const platformName = (id: string) => platforms.find((p) => p.id === id)?.name ?? id;
 
 export default async function Orders({ searchParams }: { searchParams: Search }) {
+  const catalog = await getCatalog();
+  const editionName = (id: string) => nameOfEdition(catalog, id).replace(" Edition", "");
+  const platformName = (id: string) => nameOfPlatform(catalog, id);
+  const platformShort = (id: string) => platformShortName(catalog, id);
+  /** "TRC20", "Bitcoin": the short network name for dense rows. */
+  const netShort = (n: string) => networks[n as NetworkId]?.standard ?? networks[n as NetworkId]?.name ?? n;
   const me = await requireAdmin(); // never rely on the layout alone for auth
   const sp = await searchParams;
   const filter = { q: sp.q, status: sp.status, dataset: sp.dataset, asset: sp.asset, sort: sp.sort, page: Math.max(1, Number(sp.page) || 1) };
@@ -141,60 +146,76 @@ export default async function Orders({ searchParams }: { searchParams: Search })
         </div>
       ) : (
         <>
-          {/* Desktop and tablet: dense table. */}
+          {/* Desktop and tablet: one line of facts per order; the full record is one click away. */}
           <div className="overflow-x-auto rounded-2xl border border-line bg-panel max-md:hidden">
-            <table className="w-full min-w-[68rem] text-sm">
+            <table className="w-full min-w-[60rem] text-sm">
               <thead className="text-left text-xs text-warm/50">
-                <tr className="border-b border-line bg-panel-2">
-                  <th className="px-4 py-3 font-medium">Payment ID</th>
+                <tr className="border-b border-line bg-panel-2/70">
+                  <th className="px-4 py-3 font-medium">Order</th>
                   <th className="px-3 py-3 font-medium">Customer</th>
                   <th className="px-3 py-3 font-medium">Product</th>
-                  <th className="px-3 py-3 text-right font-medium">Price</th>
-                  <th className="px-3 py-3 font-medium">Expected</th>
-                  <th className="px-3 py-3 font-medium">Reported</th>
-                  <th className="px-3 py-3 font-medium">Verified</th>
+                  <th className="px-3 py-3 font-medium">Amount</th>
+                  <th className="px-3 py-3 font-medium">Payment check</th>
                   <th className="px-3 py-3 font-medium">Status</th>
-                  <th className="px-4 py-3 text-right font-medium">Created</th>
+                  <th className="px-3 py-3 text-right font-medium">Created</th>
+                  <th className="w-10 py-3" aria-hidden />
                 </tr>
               </thead>
               <tbody>
                 {rows.map((r) => {
                   const mismatch = r.claimed && r.claimed !== r.cryptoAmount;
                   return (
-                    <tr key={r.paymentId} className="border-t border-line/70 align-top first:border-0 hover:bg-panel-2">
-                      <td className="px-4 py-3">
+                    <tr key={r.paymentId} className="group border-t border-line/70 first:border-0 hover:bg-panel-2/60">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         <Link href={`/admin/orders/${r.paymentId}`} className="font-mono text-[0.8125rem] font-medium text-sunset hover:underline">
                           {r.paymentId}
                         </Link>
                         <span className="mt-1 flex items-center gap-1.5 text-xs text-warm/40">
-                          {r.reference} {r.isTest && <TestPill />}
+                          <span className="font-mono">{r.reference}</span> {r.isTest && <TestPill />}
                         </span>
                       </td>
-                      <td className="max-w-[14rem] px-3 py-3">
-                        <span className="block truncate text-warm/85">{r.email}</span>
+                      <td className="max-w-[15rem] px-3 py-3">
+                        <span className="block truncate text-warm/85" title={r.email}>
+                          {r.email}
+                        </span>
                         <span className="text-xs text-warm/40 uppercase">{r.region}</span>
                       </td>
-                      <td className="px-3 py-3">
+                      <td className="px-3 py-3 whitespace-nowrap">
                         {editionName(r.editionId)}
-                        <span className="block text-xs text-warm/45">{platformName(r.platformId)}</span>
+                        <span className="block text-xs text-warm/45" title={platformName(r.platformId)}>
+                          {platformShort(r.platformId)}
+                        </span>
                       </td>
-                      <td className="px-3 py-3 text-right tabular-nums">{usd(r.usdCents)}</td>
-                      <td className="px-3 py-3 font-mono text-[0.8125rem]">
-                        {r.cryptoAmount} {r.asset}
-                        <span className="block font-sans text-xs text-warm/45">{networkLabel(r.network as NetworkId)}</span>
+                      <td className="px-3 py-3 whitespace-nowrap">
+                        <span className="tabular-nums">{usd(r.usdCents)}</span>
+                        <span className="block font-mono text-xs text-warm/50" title={networkLabel(r.network as NetworkId)}>
+                          {r.cryptoAmount} {r.asset} · {netShort(r.network)}
+                        </span>
                       </td>
-                      <td className={`px-3 py-3 font-mono text-[0.8125rem] ${mismatch ? "text-sunset" : ""}`}>
-                        {r.claimed ?? <span className="text-warm/30">—</span>}
-                        {mismatch && <span className="block font-sans text-xs">Differs</span>}
+                      <td className="px-3 py-3 text-xs whitespace-nowrap">
+                        {r.verifiedAmount ? (
+                          <span className="text-success-soft">Verified {r.verifiedAmount}</span>
+                        ) : r.claimed ? (
+                          <span className={mismatch ? "font-semibold text-sunset" : "text-warm/70"}>
+                            Reported {r.claimed}
+                            <span className="block font-normal text-warm/45">{mismatch ? "Differs from expected" : "Matches expected"}</span>
+                          </span>
+                        ) : (
+                          <span className="text-warm/35">Not paid yet</span>
+                        )}
                       </td>
-                      <td className="px-3 py-3 font-mono text-[0.8125rem] text-[#9ef0c4]">{r.verifiedAmount ?? <span className="text-warm/30">—</span>}</td>
                       <td className="px-3 py-3">
                         <StatusBadge status={r.status} />
                         {r.released && <span className="mt-1 block text-xs text-warm/45">Game released</span>}
                       </td>
-                      <td className="px-4 py-3 text-right text-xs whitespace-nowrap text-warm/55">
-                        {when(r.createdAt)}
-                        {r.submittedAt && <span className="block text-warm/40">Paid {when(r.submittedAt)}</span>}
+                      <td className="px-3 py-3 text-right text-xs whitespace-nowrap text-warm/55" title={`Created ${when(r.createdAt)}${r.submittedAt ? `, paid ${when(r.submittedAt)}` : ""}`}>
+                        {ago(r.createdAt)}
+                        {r.submittedAt && <span className="block text-warm/40">paid {ago(r.submittedAt)}</span>}
+                      </td>
+                      <td className="py-3 pr-3 text-right">
+                        <span aria-hidden className="inline-grid size-7 place-items-center rounded-md text-warm/30 transition-colors group-hover:bg-panel-2 group-hover:text-warm">
+                          <ChevronRight className="size-4" />
+                        </span>
                       </td>
                     </tr>
                   );
@@ -215,7 +236,7 @@ export default async function Orders({ searchParams }: { searchParams: Search })
                   <span className="truncate text-sm text-warm/80">{r.email}</span>
                   <span className="flex flex-wrap items-center justify-between gap-2 text-xs text-warm/50">
                     <span>
-                      {editionName(r.editionId)} · {platformName(r.platformId)} · {usd(r.usdCents)}
+                      {editionName(r.editionId)} · {platformShort(r.platformId)} · {usd(r.usdCents)}
                     </span>
                     <span className="font-mono">
                       {r.claimed ?? r.cryptoAmount} {r.asset}

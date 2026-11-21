@@ -46,6 +46,8 @@ export function HeroParticles({ className, density = 12000, max = 130 }: { class
     let visible = true;
     let last = performance.now();
     const pointer = { x: 0, y: 0, tx: 0, ty: 0 };
+    // Scroll velocity (px/s, smoothed): fast scrolling stretches motes into light streaks.
+    const scroll = { y: window.scrollY, v: 0 };
 
     /** Three kinds: neon motes (crisp glow), bokeh (large, very soft, far) and fine warm dust. */
     const spawn = (anywhere: boolean): P => {
@@ -87,11 +89,18 @@ export function HeroParticles({ className, density = 12000, max = 130 }: { class
       const t = now / 1000;
       pointer.x += (pointer.tx - pointer.x) * 0.04;
       pointer.y += (pointer.ty - pointer.y) * 0.04;
+      const sy = window.scrollY;
+      const raw = dt > 0 ? (sy - scroll.y) / dt : 0;
+      scroll.y = sy;
+      scroll.v += (Math.max(-4000, Math.min(4000, raw)) - scroll.v) * 0.12;
+      const speed = Math.min(1, Math.abs(scroll.v) / 2200);
 
       ctx.clearRect(0, 0, w, h);
       ctx.globalCompositeOperation = "lighter";
       for (const p of particles) {
-        p.y += p.vy * dt;
+        // Drift against the scroll direction, nearer motes faster (parallax).
+        p.y += p.vy * dt - scroll.v * dt * 0.28 * p.z;
+        if (p.y > h + 40) Object.assign(p, spawn(true), { y: -20 });
         if (p.y < -30) Object.assign(p, spawn(false));
         const x = p.x + Math.sin(t * 0.35 + p.phase) * p.sway + pointer.x * 22 * p.z;
         const y = p.y + pointer.y * 14 * p.z;
@@ -99,7 +108,9 @@ export function HeroParticles({ className, density = 12000, max = 130 }: { class
         // Fade in from the bottom and out near the top for a natural rise.
         const edge = Math.min(1, (h - p.y) / 120, (p.y + 30) / 160);
         ctx.globalAlpha = Math.max(0, a * edge);
-        ctx.drawImage(sprites[p.sprite]!, x - p.r, y - p.r, p.r * 2, p.r * 2);
+        const stretch = 1 + speed * 3.2 * p.z;
+        if (stretch > 1.05) ctx.globalAlpha *= 1 / Math.sqrt(stretch);
+        ctx.drawImage(sprites[p.sprite]!, x - p.r, y - p.r * stretch, p.r * 2, p.r * 2 * stretch);
       }
       ctx.globalAlpha = 1;
     };

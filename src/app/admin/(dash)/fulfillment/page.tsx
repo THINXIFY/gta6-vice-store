@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button, Card, Flash, input, label, PageHeader, TestPill, when } from "@/components/admin/ui";
-import { editions, platforms } from "@/config/product";
+import { editionName, platformShortName } from "@/lib/catalog";
+import { getCatalog } from "@/server/catalog";
 import { listInventory } from "@/server/admin";
 import { requireAdmin } from "@/server/auth";
 import { addInventoryAction, removeInventoryAction } from "../../actions";
@@ -10,6 +11,8 @@ export const metadata = { title: "Game Fulfillment" };
 const select = `${input} appearance-none`;
 
 export default async function Fulfillment({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
+  const catalog = await getCatalog();
+  const { editions, platforms } = catalog;
   await requireAdmin("owner");
   const [items, flash] = await Promise.all([listInventory(), searchParams]);
   const available = (e: string, p: string, test: boolean) => items.filter((i) => i.editionId === e && i.platformId === p && i.isTest === test && !i.assignedAt).length;
@@ -75,7 +78,7 @@ export default async function Fulfillment({ searchParams }: { searchParams: Prom
             <input name="sourceReference" required placeholder="Proves legitimate sourcing, e.g. supplier name + invoice number" className={input} />
           </label>
           <label className="flex items-center gap-2 self-end pb-2 text-sm text-warm/70">
-            <input type="checkbox" name="isTest" defaultChecked className="size-4 accent-[#ff9b62]" />
+            <input type="checkbox" name="isTest" defaultChecked className="size-4 accent-sunset" />
             Test item (for test orders only)
           </label>
           <div className="md:col-span-2 xl:col-span-3">
@@ -111,7 +114,7 @@ export default async function Fulfillment({ searchParams }: { searchParams: Prom
                   <span className="block text-xs text-warm/45">{i.kind === "access_link" ? "Access link" : "Redemption code"}</span>
                 </td>
                 <td className="px-3 py-3">
-                  {editions.find((e) => e.id === i.editionId)?.name.replace(" Edition", "")} · {platforms.find((p) => p.id === i.platformId)?.shortName}
+                  {editionName(catalog, i.editionId).replace(" Edition", "")} · {platformShortName(catalog, i.platformId)}
                   {i.region && <span className="block text-xs text-warm/45">{i.region}</span>}
                 </td>
                 <td className="max-w-[14rem] truncate px-3 py-3 text-warm/65">{i.sourceReference}</td>
@@ -124,7 +127,7 @@ export default async function Fulfillment({ searchParams }: { searchParams: Prom
                     <form action={removeInventoryAction}>
                       <input type="hidden" name="id" value={i.id} />
                       <span className="text-xs text-warm/45">Available</span>{" "}
-                      <button className="ml-2 text-xs text-[#ff9fc4] hover:underline">Remove</button>
+                      <button className="ml-2 text-xs text-danger-soft hover:underline">Remove</button>
                     </form>
                   )}
                 </td>

@@ -44,7 +44,7 @@ export default async function Settings({ searchParams }: { searchParams: Promise
         {totp.enabled ? (
           <div className="grid gap-4 sm:grid-cols-[1fr_auto] sm:items-end">
             <p className="text-sm text-warm/70">
-              <span className="font-semibold text-[#9ef0c4]">On.</span> Signing in needs your password and a code from your authenticator app.
+              <span className="font-semibold text-success-soft">On.</span> Signing in needs your password and a code from your authenticator app.
             </p>
             <form action={disable2faAction} className="flex items-end gap-2">
               <label className={label}>

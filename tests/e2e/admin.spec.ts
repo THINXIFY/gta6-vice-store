@@ -35,7 +35,7 @@ test.beforeAll(async ({ browser }) => {
 test.afterAll(async () => admin?.context().close());
 
 test("unauthenticated visitors are sent to sign-in; screenshots are private", async ({ page, request }) => {
-  for (const path of ["/admin", "/admin/orders", "/admin/orders/VICE-00000000", "/admin/wallets", "/admin/pricing", "/admin/fulfillment", "/admin/settings"]) {
+  for (const path of ["/admin", "/admin/orders", "/admin/orders/VICE-00000000", "/admin/wallets", "/admin/pricing", "/admin/homepage", "/admin/content", "/admin/launch", "/admin/fulfillment", "/admin/settings"]) {
     await page.goto(path);
     await expect(page, path).toHaveURL(/\/admin\/login$/);
   }
@@ -48,8 +48,8 @@ test("unauthenticated visitors are sent to sign-in; screenshots are private", as
 
 test("overview shows the key figures and the sidebar", async () => {
   await admin.goto("/admin");
-  for (const label of ["Total orders", "Pending payments", "Approved payments", "Rejected payments", "Verified revenue"]) await expect(admin.locator("main")).toContainText(label);
-  for (const item of ["Overview", "Orders & Payments", "Wallets", "Products & Pricing", "Game Fulfillment", "Settings"]) await expect(admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: item })).toBeVisible();
+  for (const label of ["To review", "Awaiting payment", "Verified revenue", "Codes in stock", "Needs attention", "Recent activity"]) await expect(admin.locator("main")).toContainText(label);
+  for (const item of ["Overview", "Orders & Payments", "Wallets", "Catalogue", "Homepage", "Content", "Game Fulfillment", "Settings"]) await expect(admin.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: item })).toBeVisible();
 });
 
 test("review flow: search, inspect, checklist approval, release, customer receives the code", async ({ request, browser }) => {
@@ -168,6 +168,25 @@ test("wallets refuse invalid addresses and anything that looks like a secret", a
   await row2.getByLabel("USDT Tron (TRC20) receiving address").fill(Array(12).fill("word").join(" "));
   await row2.getByRole("button", { name: "Save" }).click();
   await expect(admin.locator("main").getByRole("alert")).toContainText("private key or recovery phrase");
+
+  // A one-character typo fails the TRON checksum even though the format looks right.
+  const row3 = admin.locator("form").filter({ has: admin.getByLabel("USDT Tron (TRC20) receiving address") });
+  await row3.getByLabel("USDT Tron (TRC20) receiving address").fill("TGrtArvSNS6SP3ZRyAERJ4FbXR8QqQGXiK");
+  await row3.getByLabel("Live").check();
+  await row3.getByRole("button", { name: "Save" }).click();
+  await expect(admin.locator("main").getByRole("alert")).toContainText("not a valid Tron address");
+
+  // Methods are added from the supported list (as test methods) and switched off again.
+  await admin.goto("/admin/wallets");
+  await admin.getByLabel("Coin and network").selectOption("LTC:litecoin");
+  await admin.getByRole("button", { name: "Add method" }).click();
+  await expect(admin.getByRole("status")).toContainText("Payment method added");
+  const ltc = admin.locator("[data-wallet=\"LTC:litecoin\"]");
+  await expect(ltc).toContainText("Test only");
+  await ltc.getByLabel("Enabled").uncheck();
+  await ltc.getByRole("button", { name: "Save" }).click();
+  await expect(admin.getByRole("status")).toContainText("Wallet saved");
+  await expect(admin.locator("[data-wallet=\"LTC:litecoin\"]")).toContainText("Switched off");
 });
 
 test("price changes reach the storefront immediately", async () => {
@@ -185,6 +204,151 @@ test("price changes reach the storefront immediately", async () => {
   await expect(shop.locator("#editions label", { hasText: "Standard Edition" })).toContainText("$21.00");
   await shop.close();
   await setPrice("19.00");
+});
+
+test("catalogue: editions, platforms and contents are managed in admin", async () => {
+  await admin.goto("/admin/pricing");
+  const main = admin.locator("main");
+  await expect(main.getByRole("heading", { name: "Catalogue", level: 1 })).toBeVisible();
+  // The seeded catalogue is listed (from the database, not code).
+  for (const t of ["Standard Edition", "Ultimate Edition", "PlayStation 5", "Xbox Series X|S"]) await expect(main).toContainText(t);
+  const itemInput = (v: string) => main.locator(`input[name="name"][value="${v}"]`);
+  await expect(itemInput("Rideout Customs Mod Shop")).toHaveCount(1);
+
+  // Add an edition that is not on sale yet: listed in admin, absent from the storefront.
+  const name = `QA ${hex(4)} Edition`;
+  await main.getByText("Add an edition").click();
+  const add = main.locator("form", { has: admin.getByRole("button", { name: "Add edition" }) });
+  await add.getByLabel("Name").fill(name);
+  await add.getByLabel("Short line (pickers)").fill("Game + test extras");
+  await add.getByLabel("On sale").uncheck();
+  await add.getByRole("button", { name: "Add edition" }).click();
+  await expect(admin.getByRole("status")).toContainText("Edition added");
+  await expect(main).toContainText(name);
+  const shop = await admin.context().newPage();
+  await shop.goto("/");
+  await expect(shop.locator("#editions")).toContainText("Standard Edition");
+  await expect(shop.locator("#editions")).not.toContainText(name);
+  await shop.close();
+
+  // Redeem links must be https.
+  await main.getByText("Add a platform").click();
+  const plat = main.locator("form", { has: admin.getByRole("button", { name: "Add platform" }) });
+  await plat.getByLabel("Name", { exact: true }).fill("QA Console");
+  await plat.getByLabel("Redeem link (https)").fill("http://insecure.example");
+  await plat.getByRole("button", { name: "Add platform" }).click();
+  await expect(main.getByRole("alert")).toContainText("must start with https://");
+
+  // Edition contents: add an item, then remove it.
+  const item = `QA item ${hex(4)}`;
+  const newItem = main.locator("form", { has: admin.getByRole("button", { name: "Add", exact: true }) });
+  await newItem.getByLabel("New item category").fill("QA");
+  await newItem.getByLabel("New item", { exact: true }).fill(item);
+  await newItem.getByRole("button", { name: "Add", exact: true }).click();
+  await expect(admin.getByRole("status")).toContainText("Item added");
+  await expect(itemInput(item)).toHaveCount(1);
+  await main.getByRole("button", { name: `Remove ${item}` }).click();
+  await expect(admin.getByRole("status")).toContainText("Item removed");
+  await expect(itemInput(item)).toHaveCount(0);
+});
+
+test("homepage: sections and menu are managed in admin", async () => {
+  await admin.goto("/admin/homepage");
+  const main = admin.locator("main");
+  await expect(main.getByRole("heading", { name: "Homepage", level: 1 })).toBeVisible();
+  await expect(main.locator("[data-block]")).toHaveCount(10);
+  await expect(main.locator('[data-block="hero"]')).toContainText("Always on");
+
+  const closing = main.locator('[data-block="closing"]');
+  // Menu labels stay short.
+  await closing.getByLabel("Closing call to action menu label").fill("A very long menu label here");
+  await closing.getByRole("button", { name: "Save" }).click();
+  await expect(main.getByRole("alert")).toContainText("24 characters or fewer");
+
+  // A label puts the section in the site menu; clearing it takes it out again.
+  await main.locator('[data-block="closing"]').getByLabel("Closing call to action menu label").fill("Get it");
+  await main.locator('[data-block="closing"]').getByRole("button", { name: "Save" }).click();
+  await expect(admin.getByRole("status")).toContainText("Homepage saved");
+  await expect(main.getByRole("list", { name: "Menu preview" })).toContainText("Get it");
+  const shop = await admin.context().newPage();
+  await shop.goto("/");
+  const nav = shop.getByRole("navigation", { name: "Primary" });
+  await expect(nav.getByRole("link", { name: "Get it" })).toHaveAttribute("href", "#closing");
+  await expect(shop.locator("#closing")).toHaveCount(1);
+  await main.locator('[data-block="closing"]').getByLabel("Closing call to action menu label").fill("");
+  await main.locator('[data-block="closing"]').getByRole("button", { name: "Save" }).click();
+  await expect(admin.getByRole("status")).toContainText("Homepage saved");
+  await shop.reload();
+  await expect(nav.getByRole("link", { name: "Get it" })).toHaveCount(0);
+  await shop.close();
+});
+
+test("content: wording, FAQ and pages are managed in admin", async () => {
+  const main = admin.locator("main");
+
+  // Section text: a change reaches the storefront; resetting restores the default.
+  await admin.goto("/admin/content?tab=text");
+  await expect(main.getByRole("heading", { name: "Content", level: 1 })).toBeVisible();
+  const closing = main.locator("#copy-closing");
+  await closing.locator("summary").click();
+  const body = `Choose, pay and play. ${hex(4)}`;
+  await closing.getByLabel("Body").fill(body);
+  await closing.getByRole("button", { name: /^Save closing/ }).click();
+  await expect(admin.getByRole("status")).toContainText("Wording saved");
+  const shop = await admin.context().newPage();
+  await shop.goto("/");
+  await expect(shop.locator("[data-closing-cta]")).toContainText(body);
+  await main.locator("#copy-closing").getByRole("button", { name: "Reset this section" }).click();
+  await expect(admin.getByRole("status")).toContainText("reset to the default");
+  await shop.reload();
+  await expect(shop.locator("[data-closing-cta]")).toContainText("Pick your platform and edition");
+
+  // FAQ: add a question, then remove it.
+  await admin.goto("/admin/content?tab=faq");
+  const question = `QA question ${hex(4)}?`;
+  await main.getByText("Add a question").click();
+  const add = main.locator("form", { has: admin.getByRole("button", { name: "Add question" }) });
+  await add.getByLabel("Question").fill(question);
+  await add.getByLabel("Answer (lead with the direct answer)").fill("Yes. This is a test answer.");
+  await add.getByRole("button", { name: "Add question" }).click();
+  await expect(admin.getByRole("status")).toContainText("Question added");
+  const row = main.locator("[data-faq]", { hasText: question });
+  await expect(row).toContainText("Draft");
+  await row.locator("summary").click();
+  await row.getByRole("button", { name: "Remove question" }).click();
+  await expect(admin.getByRole("status")).toContainText("Question removed");
+  await expect(main.locator("[data-faq]", { hasText: question })).toHaveCount(0);
+
+  // Pages: a page with "To confirm" items cannot be published; saving unchanged text keeps every section.
+  await admin.goto("/admin/content?tab=pages&at=terms");
+  const terms = main.locator("#page-terms");
+  await expect(terms).toContainText("to confirm");
+  await expect(terms.getByRole("button", { name: "Publish page" })).toBeDisabled();
+  await shop.goto("/terms");
+  const sectionsBefore = await shop.locator("main section[id]").count();
+  const textBefore = await shop.locator("main article, main").first().innerText();
+  await terms.getByRole("button", { name: "Save page" }).click();
+  await expect(admin.getByRole("status")).toContainText("Page saved");
+  await shop.reload();
+  await expect(shop.locator("main section[id]")).toHaveCount(sectionsBefore);
+  expect(await shop.locator("main article, main").first().innerText()).toBe(textBefore);
+  await shop.close();
+});
+
+test("launch checklist and health check report this deployment honestly", async ({ request }) => {
+  const health = await request.get("/api/health");
+  expect(health.status()).toBe(200);
+  expect(await health.json()).toEqual({ ok: true });
+  expect(health.headers()["cache-control"]).toContain("no-store");
+
+  await admin.goto("/admin/launch");
+  const main = admin.locator("main");
+  await expect(main.getByRole("heading", { name: "Launch checklist", level: 1 })).toBeVisible();
+  // The test build is a local preview: checkout closed, preview on, embedded database, no domain.
+  for (const id of ["checkout", "preview", "database", "domain", "legal"]) await expect(main.locator(`[data-check="${id}"]`)).toHaveAttribute("data-ok", "false");
+  await expect(main.locator(`[data-check="catalogue"]`)).toHaveAttribute("data-ok", "true");
+  await expect(main.getByRole("progressbar")).toBeVisible();
+  await expect(main).not.toContainText("test-owner-password-123");
 });
 
 test("reviewers cannot open owner pages", async ({ browser }) => {
@@ -302,6 +466,26 @@ test("emails: settings page, test email delivered over SMTP, template previews a
   expect(readInbox().some((m) => m.subject === "[Test] Test email from VICE STORE admin")).toBe(true);
   await expect(admin.locator("section", { hasText: "Delivery log" })).toContainText("Test email");
 
+  // Sender settings (Admin → Emails): name and reply-to reach real emails; addresses are validated.
+  await admin.getByLabel(/Admin alert recipients/).fill("owner@vice.test, not-an-email");
+  await admin.getByRole("button", { name: "Save sender settings" }).click();
+  await expect(admin.locator("main").getByRole("alert")).toContainText("not a valid email address");
+  await admin.getByLabel(/Admin alert recipients/).fill("");
+  await admin.getByLabel("Sender name").fill("QA Sender");
+  await admin.getByLabel("Reply-to address").fill("help@vice.test");
+  await admin.getByRole("button", { name: "Save sender settings" }).click();
+  await expect(admin.getByRole("status")).toContainText("Sender settings saved");
+  await admin.getByLabel("Send to").fill("owner@vice.test");
+  await admin.getByRole("button", { name: "Send test email" }).click();
+  await expect(admin.getByRole("status")).toContainText("Test email sent");
+  const latest = readInbox().filter((m) => m.subject === "[Test] Test email from VICE STORE admin").at(-1)!;
+  expect(latest.headers).toMatch(/^From: "QA Sender" <[^>]+>/m);
+  expect(latest.headers).toMatch(/^Reply-To: help@vice.test/m);
+  await admin.getByLabel("Sender name").fill("");
+  await admin.getByLabel("Reply-to address").fill("");
+  await admin.getByRole("button", { name: "Save sender settings" }).click();
+  await expect(admin.getByRole("status")).toContainText("Sender settings saved");
+
   const preview = await admin.request.get("/admin/emails/preview/payment_rejected");
   expect(preview.status()).toBe(200);
   expect(preview.headers()["content-security-policy"]).toContain("default-src 'none'");
@@ -315,7 +499,7 @@ test("overview keeps live and test figures apart; orders list sorts, filters and
   await expect(admin.getByRole("navigation", { name: "Data set" }).getByRole("link", { name: /Live/ })).toHaveAttribute("aria-current", "page");
   await expect(admin.locator("main")).toContainText("Live orders and verified revenue");
   await admin.goto("/admin?data=test");
-  await expect(admin.locator("main")).toContainText("Awaiting fulfillment");
+  await expect(admin.locator("main")).toContainText("Codes in stock");
   await admin.goto("/admin/orders?dataset=live&sort=newest");
   await expect(admin.locator("main")).toContainText("No orders match these filters");
   await admin.goto("/admin/orders?dataset=test&sort=amount");

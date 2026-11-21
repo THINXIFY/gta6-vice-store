@@ -1,3 +1,5 @@
+import { brand } from "@/brand/brand";
+import { emailPalette } from "@/brand/theme";
 import { site } from "@/config/site";
 
 /**
@@ -40,9 +42,10 @@ export type EmailData = {
   redirectedFrom?: string;
 };
 
-const C = { bg: "#08080d", card: "#120e19", line: "#2a2235", warm: "#fff4eb", body: "#d6cbd2", muted: "#9a8fa0", vice: "#ff579a", sunset: "#ff9b62", lavender: "#b28cff" };
-const SANS = `'Hanken Grotesk','Helvetica Neue',Helvetica,Arial,sans-serif`;
-const DISPLAY = `'Big Shoulders Display',Impact,'Arial Narrow Bold','Arial Narrow',sans-serif`;
+/** This client's colours and font names (src/brand); email clients ignore CSS variables. */
+const C = emailPalette;
+const SANS = `'${brand.fonts.sans}','Helvetica Neue',Helvetica,Arial,sans-serif`;
+const DISPLAY = `'${brand.fonts.display}',Impact,'Arial Narrow Bold','Arial Narrow',sans-serif`;
 const MONO = `ui-monospace,'SFMono-Regular',Menlo,Consolas,monospace`;
 
 export const esc = (v: unknown) => String(v ?? "").replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]!);
@@ -65,10 +68,10 @@ function rowsHtml(rows: Row[]) {
 
 function layout(preheader: string, b: Block, data: EmailData, audience: "customer" | "admin") {
   const testBanner = data.order?.isTest || data.support?.isTest || data.redirectedFrom
-    ? `<tr><td style="padding:10px 24px;background:#2a2410;font:600 12px/1.5 ${SANS};color:#ffe680;text-align:center">Test email${data.redirectedFrom ? ` (intended for ${esc(data.redirectedFrom)})` : ""}. No real payment or game is involved.</td></tr>`
+    ? `<tr><td style="padding:10px 24px;background:${C.warnBg};font:600 12px/1.5 ${SANS};color:${C.warnText};text-align:center">Test email${data.redirectedFrom ? ` (intended for ${esc(data.redirectedFrom)})` : ""}. No real payment or game is involved.</td></tr>`
     : "";
   const note = b.note
-    ? `<tr><td style="padding:8px 32px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-left:3px solid ${C[b.note.tone]};background:#1a1422;border-radius:0 10px 10px 0"><tr><td style="padding:16px 18px">
+    ? `<tr><td style="padding:8px 32px 0"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-left:3px solid ${C[b.note.tone]};background:${C.note};border-radius:0 10px 10px 0"><tr><td style="padding:16px 18px">
   <p style="margin:0 0 6px;font:700 13px/1.4 ${SANS};color:${C.warm}">${esc(b.note.title)}</p>
   <p style="margin:0;font:400 14px/1.6 ${SANS};color:${C.body};white-space:pre-line">${esc(b.note.text)}</p>
 </td></tr></table></td></tr>`
@@ -80,7 +83,7 @@ function layout(preheader: string, b: Block, data: EmailData, audience: "custome
     : "";
   const footer =
     audience === "customer"
-      ? `You are receiving this email because an order was placed at ${esc(site.name)} with this address.<br>${esc(site.disclaimer)}`
+      ? `You are receiving this email because an order was placed at ${esc(site.name)} with this address.`
       : `Sent to ${esc(site.name)} administrators. Verify every payment on the blockchain before approving.`;
 
   return `<!doctype html>
@@ -108,7 +111,7 @@ function layout(preheader: string, b: Block, data: EmailData, audience: "custome
       <tr><td style="padding:0 0 32px"></td></tr>
     </table>
   </td></tr>
-  <tr><td style="padding:22px 12px 0;font:400 12px/1.6 ${SANS};color:#6f6676;text-align:center">${footer}</td></tr>
+  <tr><td style="padding:22px 12px 0;font:400 12px/1.6 ${SANS};color:${C.faint};text-align:center">${footer}</td></tr>
 </table>
 </td></tr></table>
 </body></html>`;
@@ -125,7 +128,7 @@ function textVersion(b: Block, data: EmailData) {
     b.rows?.length ? "\n" + b.rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n") : "",
     b.cta ? `\n${b.cta.label}: ${b.cta.href}` : "",
     b.after ? `\n${strip(b.after)}` : "",
-    `\n--\n${site.name}. ${site.disclaimer}`,
+    `\n--\n${site.name}`,
   ].join("\n");
 }
 
@@ -163,7 +166,7 @@ export function renderEmail(kind: EmailKind, data: EmailData): { subject: string
       preheader = "We are verifying your transaction. This usually takes about 30 minutes.";
       block = {
         heading: "Payment received for review",
-        intro: "We have your transaction details and are verifying them on the blockchain. Verification usually takes <strong style=\"color:#fff4eb\">about 30 minutes</strong>. We will email you as soon as it is done.",
+        intro: `We have your transaction details and are verifying them on the blockchain. Verification usually takes <strong style=\"color:${C.warm}\">about 30 minutes</strong>. We will email you as soon as it is done.`,
         rows: [...orderRows(o!), ["Amount reported", o!.claimedAmount ? `${o!.claimedAmount} ${o!.asset}` : null, true], ["Network", o!.network], ["Transaction hash", o!.txid, true]],
         cta: data.link ? { label: "Check order status", href: data.link } : undefined,
         after: "Every payment is checked by a person. Nothing is approved automatically.",

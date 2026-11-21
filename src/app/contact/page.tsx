@@ -1,16 +1,17 @@
 import { ContactForm } from "@/components/info/ContactForm";
 import { InfoPage, infoMetadata } from "@/components/info/InfoPage";
 import { Container } from "@/components/ui/Layout";
-import { site } from "@/config/site";
+import { getPublished } from "@/server/content";
 
-export const metadata = infoMetadata("contact");
+export const generateMetadata = () => infoMetadata("contact");
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const published = await getPublished();
   return (
     <InfoPage id="contact">
       <Container className="pb-14">
         <section aria-label="Send us a message" className="max-w-3xl">
-          <ContactForm preview={!site.pages.contact.published} />
+          <ContactForm preview={!published.contact} />
         </section>
       </Container>
     </InfoPage>

@@ -1,14 +1,16 @@
 "use client";
 
-import { Store } from "lucide-react";
 import { Fragment } from "react";
 import { Container, Display } from "@/components/ui/Layout";
 import { Glow } from "@/components/ui/Atmosphere";
 import { Price } from "@/components/ui/Price";
-import { purchaseCopy } from "@/config/content";
-import { editions, game, purchaseDetails } from "@/config/product"; // editions: art layers only (prices come from the catalog)
+import { useCopy } from "@/components/ContentProvider";
+import { useCatalog } from "@/components/CatalogProvider";
+import { game, purchaseDetails } from "@/config/product";
 import { site } from "@/config/site";
 import { checkoutAvailable } from "@/lib/checkout";
+import { offeredAssets } from "@/lib/orders/methods";
+
 import { cn } from "@/lib/utils";
 import { BuyButton } from "./BuyButton";
 import { EditionArt, hasEditionArt } from "./EditionArt";
@@ -25,9 +27,11 @@ function releaseLine() {
 }
 
 function ArtPanel() {
-  const { editionId, platformId, edition, platform } = usePurchase();
+  const { editionId, platformId, edition, platform, editions } = usePurchase();
+  const { product } = useCatalog();
   // Supplied key art already carries its own title, so the drawn title and overlays step aside.
-  const supplied = hasEditionArt(platformId);
+  const supplied = hasEditionArt(editions.map((e) => e.id), platformId);
+  const [label, suffix] = /^(.*) Edition$/.test(edition.name) ? [edition.name.replace(/ Edition$/, ""), "Edition"] : [edition.name, ""];
   return (
     <figure
       role="img"
@@ -62,10 +66,10 @@ function ArtPanel() {
         </span>
       </div>
       <div aria-hidden className={cn("absolute inset-x-0 bottom-0 p-5 sm:p-7 lg:p-9", supplied && "hidden")}>
-        <p className="font-display text-sm font-extrabold tracking-[0.14em] text-warm/80 uppercase">Grand Theft Auto VI</p>
+        <p className="font-display text-sm font-extrabold tracking-[0.14em] text-warm/80 uppercase">{product.title}</p>
         <p key={editionId} className="swap-in mt-1 font-display text-[clamp(2.25rem,1.4rem+3.4vw,4.5rem)] leading-[0.9] font-extrabold uppercase">
-          {edition.name.replace(/ Edition$/, "")}
-          <span className="block text-warm/55">Edition</span>
+          {label}
+          {suffix && <span className="block text-warm/55">{suffix}</span>}
         </p>
       </div>
     </figure>
@@ -161,13 +165,14 @@ function EditionPicker() {
 
 function OrderSummary() {
   const { edition, platform, price } = usePurchase();
+  const { product } = useCatalog();
   const details = purchaseDetails.filter((d) => d.verified && d.value);
   return (
     <div className="mt-10 border-t border-warm/10 pt-6">
       <h3 className="sr-only">Order summary</h3>
       <dl aria-live="polite" className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-sm">
         <dt className="text-warm/55">Game</dt>
-        <dd className="text-right">{game.title}</dd>
+        <dd className="text-right">{product.title}</dd>
         <dt className="text-warm/55">Edition</dt>
         <dd className="text-right">{edition.name}</dd>
         <dt className="text-warm/55">Platform</dt>
@@ -189,6 +194,12 @@ function OrderSummary() {
 
 /** `notes`: verified reassurance lines, passed in from the server (policy copy stays server-only). */
 export function PurchaseSection({ notes = [] }: { notes?: string[] }) {
+  // Wording from Admin → Content (defaults in src/config/content.ts).
+  const copy = useCopy();
+  const purchaseCopy = copy.purchase;
+  // "Pay with USDT, BTC, ETH and BNB. Guest checkout." from the methods enabled in Admin → Wallets.
+  const coins = offeredAssets(useCatalog().methods).map((a) => a.id);
+  const payWith = coins.length ? `Pay with ${new Intl.ListFormat("en", { type: "conjunction" }).format(coins)}. Guest checkout.` : "Guest checkout.";
   const { edition } = usePurchase();
   const release = releaseLine();
 
@@ -198,6 +209,10 @@ export function PurchaseSection({ notes = [] }: { notes?: string[] }) {
       <Glow tone="electric" className="-right-48 -top-24 size-[36rem]" strength={0.1} speed={0.3} />
       <Container className="grid gap-x-16 gap-y-10 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] xl:gap-x-24">
         <div className="lg:col-start-2 lg:row-start-1">
+          {/* Landing spot for the hero "VI" hand-off (HeroMotion); decorative. */}
+          <p aria-hidden data-handoff-target className="mb-3 inline-block bg-[linear-gradient(100deg,var(--color-vice),var(--color-sunset))] bg-clip-text pr-[0.04em] font-display text-[clamp(3.5rem,2.6rem+3vw,5.5rem)] leading-[0.85] font-extrabold text-transparent">
+            VI
+          </p>
           <Display reveal as="h2" id="purchase-title" size="md" caps={false} className="tracking-[-0.005em]">
             {purchaseCopy.heading}
           </Display>
@@ -218,20 +233,18 @@ export function PurchaseSection({ notes = [] }: { notes?: string[] }) {
           <OrderSummary />
           <BuyButton label={`Buy ${edition.name}`} describedBy="checkout-status" className="mt-7 h-15 w-full text-base" />
           <p id="checkout-status" className="mt-3 text-center text-sm text-warm/55">
-            {checkoutAvailable ? purchaseCopy.payWith : purchaseCopy.checkoutClosed}
+            {checkoutAvailable ? payWith : purchaseCopy.checkoutClosed}
           </p>
-          <ul className="mt-8 grid gap-3 border-t border-warm/10 pt-6 text-sm text-warm/65">
-            <li className="flex gap-3">
-              <Store aria-hidden className="mt-0.5 size-4 shrink-0 text-sunset" />
-              {site.shortDisclaimer}
-            </li>
-            {notes.map((n) => (
-              <li key={n} className="flex gap-3">
-                <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-sunset" />
-                {n}
-              </li>
-            ))}
-          </ul>
+          {notes.length > 0 && (
+            <ul className="mt-8 grid gap-3 border-t border-warm/10 pt-6 text-sm text-warm/65">
+              {notes.map((n) => (
+                <li key={n} className="flex gap-3">
+                  <span aria-hidden className="mt-2 size-1.5 shrink-0 rounded-full bg-sunset" />
+                  {n}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </Container>
     </section>

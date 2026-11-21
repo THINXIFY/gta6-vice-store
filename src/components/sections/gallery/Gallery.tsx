@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useRef, useState } from "react";
 import { Container, Display } from "@/components/ui/Layout";
 import { Glow } from "@/components/ui/Atmosphere";
-import { galleryCopy } from "@/config/content";
+import { useCopy } from "@/components/ContentProvider";
 import { gallery as allItems } from "@/config/media";
 import type { GalleryItem } from "@/config/types";
 import { gsap } from "@/lib/motion/gsap";
@@ -107,6 +107,9 @@ function Panel({ item, index, active, onActivate, onOpen }: PanelProps) {
  * desktop, vertical on phones. The full frame opens in a lightbox.
  */
 export function Gallery() {
+  // Wording from Admin → Content (defaults in src/config/content.ts).
+  const copy = useCopy();
+  const galleryCopy = copy.gallery;
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState<number | null>(null);
   const opener = useRef<HTMLButtonElement | null>(null);

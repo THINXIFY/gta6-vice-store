@@ -4,11 +4,14 @@ import type { ReactNode } from "react";
 import { Glow } from "@/components/ui/Atmosphere";
 import { Container } from "@/components/ui/Layout";
 import { Wordmark } from "@/components/ui/Wordmark";
-import { game, platforms } from "@/config/product";
+import { game } from "@/config/product";
+import { getCatalog } from "@/server/catalog";
+import { getNav } from "@/server/home";
 import { site } from "@/config/site";
 import { checkoutAvailable } from "@/lib/checkout";
 import { contentPreview } from "@/lib/media";
-import { pageHref } from "@/lib/pages";
+import { pageHref as hrefFor } from "@/lib/pages";
+import { getPublished } from "@/server/content";
 
 const LEGAL = ["terms", "privacy", "refunds", "cookies"] as const;
 
@@ -52,9 +55,11 @@ function Column({ title, children }: { title: string; children: ReactNode }) {
  * Closing footer: brand, navigation, help and legal (configured destinations only),
  * verified platform/rating facts, and an oversized wordmark that ends the page.
  */
-export function Footer({ base = "" }: { base?: "" | "/" }) {
+export async function Footer({ base = "" }: { base?: "" | "/" }) {
   const year = new Date().getFullYear();
-  const platformList = new Intl.ListFormat("en", { type: "conjunction" }).format(platforms.filter((p) => p.verified).map((p) => p.name));
+  const [catalog, nav, published] = await Promise.all([getCatalog(), getNav(), getPublished()]);
+  const pageHref = (id: Parameters<typeof hrefFor>[0]) => hrefFor(id, published);
+  const platformList = new Intl.ListFormat("en", { type: "conjunction" }).format(catalog.platforms.filter((p) => p.available).map((p) => p.name));
   // Contact page when published (or as a draft in preview); otherwise a configured support URL/email.
   const supportHref = pageHref("contact") || site.support.url || (site.support.email ? `mailto:${site.support.email}` : "");
   const legal = LEGAL.map((id) => ({ id, label: site.pages[id].label, href: pageHref(id) })).filter((l) => l.href || contentPreview);
@@ -62,7 +67,7 @@ export function Footer({ base = "" }: { base?: "" | "/" }) {
 
   return (
     <footer className="relative isolate overflow-hidden border-t border-warm/8 bg-obsidian">
-      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/3 bg-[radial-gradient(60%_70%_at_50%_100%,rgb(255_155_98/0.16),rgb(255_87_154/0.06)_45%,transparent_75%)]" />
+      <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 -z-10 h-2/3 bg-[radial-gradient(60%_70%_at_50%_100%,color-mix(in_oklab,var(--color-sunset)_16%,transparent),color-mix(in_oklab,var(--color-vice)_6%,transparent)_45%,transparent_75%)]" />
       <Glow tone="lavender" className="-left-56 -top-40 size-[40rem]" strength={0.1} speed={0.3} />
 
       <Container className="pt-20 lg:pt-28">
@@ -70,12 +75,6 @@ export function Footer({ base = "" }: { base?: "" | "/" }) {
           <div className="lg:col-span-5">
             <a href={`${base}#overview`} className="inline-flex items-center gap-4" aria-label={`${site.name}, back to top`}>
               <Wordmark className="text-[2.25rem]" />
-              <span aria-hidden className="h-7 w-px bg-warm/20" />
-              <span className="text-xs leading-tight font-medium text-warm/55">
-                Independent
-                <br />
-                retailer
-              </span>
             </a>
             <p className="mt-6 max-w-[26rem] leading-relaxed text-warm/65">{site.description}</p>
             <dl className="mt-8 grid gap-1 text-sm">
@@ -94,7 +93,7 @@ export function Footer({ base = "" }: { base?: "" | "/" }) {
 
           <nav aria-label="Footer" className="grid grid-cols-2 gap-10 sm:grid-cols-3 lg:col-span-6 lg:col-start-7">
             <Column title="Explore">
-              {site.nav.map((n) => (
+              {nav.map((n) => (
                 <FooterLink key={n.href} label={n.label} href={base + n.href} />
               ))}
             </Column>
@@ -132,7 +131,6 @@ export function Footer({ base = "" }: { base?: "" | "/" }) {
                 Media credits
               </Link>
             </p>
-            <p className="mt-1">{site.disclaimer}</p>
           </div>
           <a href={`${base}#overview`} className={`${linkClass.replace("inline-block", "inline-flex")} shrink-0 items-center gap-2 text-sm`}>
             Back to top

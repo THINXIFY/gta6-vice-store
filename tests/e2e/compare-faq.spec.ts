@@ -63,8 +63,10 @@ test.describe("FAQ", () => {
     const faq = page.locator("#faq");
     const drafts = await faq.locator("details[data-status=draft]").count();
     const questions = await faq.locator("details").count();
-    if (drafts === 0) expect(questions).toBe(4); // live: verified answers only
-    else expect(questions).toBe(12);
+    // Live (checkout closed): the 8 verified game answers only. Preview: all 15, grouped in two topics.
+    if (drafts === 0) expect(questions).toBe(8);
+    else expect(questions).toBe(15);
+    await expect(faq.getByRole("navigation", { name: "FAQ topics" }).getByRole("link")).toHaveCount(drafts === 0 ? 0 : 2);
   });
 
   test("structured data reflects verified content only", async ({ page }) => {
@@ -87,7 +89,9 @@ test.describe("FAQ", () => {
     expect(game).not.toHaveProperty("offers");
     expect(game).not.toHaveProperty("aggregateRating");
     const faq = data.find((d) => d["@type"] === "FAQPage") as { mainEntity: { name: string }[] };
-    expect(faq.mainEntity).toHaveLength(4);
+    // FAQPage mirrors the visible, verified answers exactly.
+    const visibleVerified = await page.locator("#faq details:not([data-status=draft])").count();
+    expect(faq.mainEntity).toHaveLength(visibleVerified);
     expect(faq.mainEntity.map((q) => q.name)).not.toContain("What is your refund policy?");
   });
 });

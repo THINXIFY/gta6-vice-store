@@ -14,7 +14,8 @@ export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
 const g = globalThis as typeof globalThis & { __viceDb?: Promise<Db> };
 
 /**
- * DATABASE_URL set → PostgreSQL via postgres.js (migrations applied by `npm run db:migrate`).
+ * DATABASE_URL set → PostgreSQL via postgres.js (migrations applied by `npm run db:migrate`; the
+ *   idempotent seed runs on first use, as with PGlite).
  * Not set → embedded PGlite at PGLITE_DIR (default .data/pglite) for local development and
  * tests; migrations and seed data are applied automatically on first use.
  */
@@ -22,7 +23,12 @@ async function connect(): Promise<Db> {
   const url = process.env.DATABASE_URL;
   if (url) {
     const { default: postgres } = await import("postgres");
-    return drizzlePostgres(postgres(url, { max: 10, prepare: false }), { schema }) as unknown as Db;
+    const db = drizzlePostgres(postgres(url, { max: 10, prepare: false }), { schema }) as unknown as Db;
+    // Same idempotent seed as PGlite: a fresh production database gets the product, layout and
+    // starting (test) payment methods; existing rows and admin changes are never overwritten.
+    // Not during `next build` (no database work while prerendering).
+    if (process.env.NEXT_PHASE !== "phase-production-build") await seed(db);
+    return db;
   }
   const { PGlite } = await import("@electric-sql/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");

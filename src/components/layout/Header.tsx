@@ -3,11 +3,12 @@
 import { Menu, PackageSearch, ShoppingBag, X } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent, useMemo } from "react";
 import { getLenis, scrollToHash } from "@/components/motion/SmoothScroll";
 import { Button } from "@/components/ui/Button";
 import { Wordmark } from "@/components/ui/Wordmark";
-import { platforms } from "@/config/product";
+import { useCatalog } from "@/components/CatalogProvider";
+import type { NavItem } from "@/lib/blocks";
 import { site } from "@/config/site";
 import { checkoutAvailable } from "@/lib/checkout";
 import { cn } from "@/lib/utils";
@@ -32,19 +33,19 @@ function useActiveSection(ids: string[]) {
   return active;
 }
 
-const NAV_IDS = site.nav.map((n) => n.href);
-
 /**
  * Floating glass header: brand left, centred navigation with a sliding glossy pill on the
  * current section, utilities and the signature purchase CTA right. Below md the nav moves into
  * a full-screen menu (native <dialog>: focus trap, Esc to close).
  */
-export function Header() {
+export function Header({ nav }: { nav: NavItem[] }) {
+  const catalog = useCatalog();
+  const navIds = useMemo(() => nav.map((n) => n.href), [nav]);
   const [scrolled, setScrolled] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const navRef = useRef<HTMLUListElement>(null);
   const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
-  const active = useActiveSection(NAV_IDS);
+  const active = useActiveSection(navIds);
   // Off the landing page, anchors point back to it ("/#editions") and navigate normally.
   const pathname = usePathname();
   const onHome = pathname === "/";
@@ -99,7 +100,7 @@ export function Header() {
     scrollToHash(hash);
   };
 
-  const platformNames = platforms.filter((p) => p.verified).map((p) => p.shortName).join(" and ");
+  const platformNames = catalog.platforms.filter((p) => p.available).map((p) => p.shortName).join(" and ");
   // The admin dashboard has its own chrome.
   if (pathname.startsWith("/admin")) return null;
 
@@ -109,17 +110,11 @@ export function Header() {
         className={cn(
           "glass-bar pointer-events-auto relative mx-auto grid h-14 max-w-[78rem] grid-cols-[1fr_auto] items-center gap-4 rounded-full pr-1.5 pl-5 sm:h-16 sm:pr-2 sm:pl-6 md:grid-cols-[1fr_auto_1fr]",
           "transition-[background-color,box-shadow] duration-500 ease-swift",
-          scrolled ? "bg-[#0c0912]/80" : "bg-[#0c0912]/55",
+          scrolled ? "bg-admin/80" : "bg-admin/55",
         )}
       >
         <a href={to("#overview")} onClick={navigate} className="flex items-center gap-3.5 justify-self-start rounded-full focus-visible:outline-offset-4" aria-label={`${site.name}, back to top`}>
           <Wordmark className="text-[1.375rem] sm:text-[1.5rem]" />
-          <span aria-hidden className="hidden h-5 w-px bg-warm/15 xl:block" />
-          <span className="hidden text-[0.6875rem] leading-[1.2] font-medium text-warm/50 xl:block">
-            Independent
-            <br />
-            retailer
-          </span>
         </a>
 
         <nav aria-label="Primary" className="hidden md:block">
@@ -130,7 +125,7 @@ export function Header() {
               className={cn("nav-pill pointer-events-none absolute top-1 bottom-1 left-0 rounded-full motion-safe:transition-[transform,width,opacity] motion-safe:duration-500 motion-safe:ease-cinematic", pill ? "opacity-100" : "opacity-0")}
               style={{ width: pill?.w ?? 0, transform: `translateX(${pill?.x ?? 0}px)` }}
             />
-            {site.nav.map((item) => {
+            {nav.map((item) => {
               const isCurrent = current === item.href;
               return (
                 <li key={item.href}>
@@ -162,7 +157,7 @@ export function Header() {
               <span className="sr-only">Order status</span>
             </Link>
           )}
-          <Button href={to(site.purchaseHref)} onClick={navigate} variant="sunset" className="h-11 px-5 shadow-[0_8px_24px_-8px_rgb(255_87_154/0.6)] max-sm:h-10 max-sm:px-4">
+          <Button href={to(site.purchaseHref)} onClick={navigate} variant="sunset" className="h-11 px-5 shadow-[0_8px_24px_-8px_color-mix(in_oklab,var(--color-vice)_60%,transparent)] max-sm:h-10 max-sm:px-4">
             <ShoppingBag aria-hidden className="size-4 max-sm:hidden" strokeWidth={2.25} />
             Buy now
           </Button>
@@ -185,8 +180,8 @@ export function Header() {
         className="mobile-menu pointer-events-auto m-0 h-dvh max-h-none w-full max-w-none bg-obsidian p-0 text-warm backdrop:bg-obsidian"
       >
         <div className="relative flex h-full flex-col px-gutter">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_55%_at_85%_100%,rgb(255_155_98/0.24),rgb(255_87_154/0.12)_45%,transparent_75%),radial-gradient(70%_40%_at_0%_0%,rgb(178_140_255/0.14),transparent_70%)]" />
-          <div className="relative mt-3 flex h-14 items-center justify-between rounded-full pr-1.5 pl-5 glass-bar bg-[#0c0912]/70">
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_55%_at_85%_100%,color-mix(in_oklab,var(--color-sunset)_24%,transparent),color-mix(in_oklab,var(--color-vice)_12%,transparent)_45%,transparent_75%),radial-gradient(70%_40%_at_0%_0%,color-mix(in_oklab,var(--color-lavender)_14%,transparent),transparent_70%)]" />
+          <div className="relative mt-3 flex h-14 items-center justify-between rounded-full pr-1.5 pl-5 glass-bar bg-admin/70">
             <Wordmark className="text-[1.375rem]" />
             <button type="button" onClick={() => dialogRef.current?.close()} aria-label="Close menu" className="grid size-10 place-items-center rounded-full hover:bg-white/[0.08]">
               <X aria-hidden className="size-5.5" />
@@ -195,7 +190,7 @@ export function Header() {
 
           <nav aria-label="Mobile" className="relative flex flex-1 items-center">
             <ul className="w-full">
-              {site.nav.map((item, i) => (
+              {nav.map((item, i) => (
                 <li key={item.href} data-menu-item style={{ "--i": i } as CSSProperties} className="border-b border-warm/8">
                   <a
                     href={to(item.href)}
@@ -210,7 +205,7 @@ export function Header() {
             </ul>
           </nav>
 
-          <div data-menu-item style={{ "--i": site.nav.length } as CSSProperties} className="relative grid gap-3 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
+          <div data-menu-item style={{ "--i": nav.length } as CSSProperties} className="relative grid gap-3 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
             <Button href={to(site.purchaseHref)} onClick={navigate} variant="sunset" size="lg" className="w-full">
               <ShoppingBag aria-hidden className="size-4.5" strokeWidth={2.25} />
               Buy now
@@ -221,10 +216,7 @@ export function Header() {
                 Track your order
               </Link>
             )}
-            <p className="mt-1 text-center text-xs text-warm/55">
-              {platformNames && <>For {platformNames}. </>}
-              {site.shortDisclaimer}
-            </p>
+            {platformNames && <p className="mt-1 text-center text-xs text-warm/55">For {platformNames}.</p>}
           </div>
         </div>
       </dialog>

@@ -14,10 +14,10 @@ const TONES: Record<OrderStatus, string> = {
   awaiting_payment: "bg-warm/8 text-warm/70",
   payment_submitted: "bg-sunset/15 text-sunset",
   under_review: "bg-lavender/15 text-lavender",
-  info_required: "bg-[#ffd400]/15 text-[#ffe680]",
-  payment_verified: "bg-[#7be3ae]/15 text-[#7be3ae]",
-  game_ready: "bg-[#7be3ae]/20 text-[#9ef0c4]",
-  payment_rejected: "bg-vice/15 text-[#ff9fc4]",
+  info_required: "bg-warning/15 text-warning-soft",
+  payment_verified: "bg-success/15 text-success",
+  game_ready: "bg-success/20 text-success-soft",
+  payment_rejected: "bg-vice/15 text-danger-soft",
   order_expired: "bg-warm/6 text-warm/45",
 };
 
@@ -31,7 +31,7 @@ export function StatusBadge({ status }: { status: OrderStatus }) {
 }
 
 export function TestPill() {
-  return <span className="rounded-full border border-[#ffd400]/35 px-2 py-0.5 text-[0.6875rem] font-semibold text-[#ffe680]">Test</span>;
+  return <span className="rounded-full border border-warning/35 px-2 py-0.5 text-[0.6875rem] font-semibold text-warning-soft">Test</span>;
 }
 
 export function PageHeader({ title, description, actions }: { title: string; description?: string; actions?: ReactNode }) {
@@ -48,7 +48,7 @@ export function PageHeader({ title, description, actions }: { title: string; des
 
 export function Card({ title, children, className, actions }: { title?: string; children: ReactNode; className?: string; actions?: ReactNode }) {
   return (
-    <section className={cn("rounded-2xl border border-line bg-panel shadow-[0_1px_0_0_rgb(255_244_235/0.03)_inset]", className)}>
+    <section className={cn("rounded-2xl border border-line bg-panel shadow-[0_1px_0_0_color-mix(in_oklab,var(--color-warm)_3%,transparent)_inset]", className)}>
       {title && (
         <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
           <h2 className="text-[0.9375rem] font-semibold">{title}</h2>
@@ -65,7 +65,7 @@ export function Flash({ ok, error }: { ok?: string; error?: string }) {
   return (
     <p
       role={error ? "alert" : "status"}
-      className={cn("flex items-start gap-2.5 rounded-lg px-4 py-3 text-sm", error ? "bg-vice/10 text-[#ff9fc4]" : "bg-[#7be3ae]/10 text-[#9ef0c4]")}
+      className={cn("flex items-start gap-2.5 rounded-lg px-4 py-3 text-sm", error ? "bg-vice/10 text-danger-soft" : "bg-success/10 text-success-soft")}
     >
       {error ? <AlertCircle aria-hidden className="mt-0.5 size-4 shrink-0" /> : <CheckCircle2 aria-hidden className="mt-0.5 size-4 shrink-0" />}
       {error ?? ok}
@@ -80,9 +80,9 @@ export function Button({ variant = "primary", className, ...props }: ComponentPr
       className={cn(
         "inline-flex h-10 items-center justify-center gap-2 rounded-lg px-4 text-sm font-semibold transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vice disabled:pointer-events-none disabled:opacity-50",
         variant === "primary" && "bg-warm text-obsidian hover:bg-white",
-        variant === "secondary" && "border border-line-strong bg-panel-2 text-warm hover:border-lavender/35 hover:bg-[#231b2e]",
-        variant === "danger" && "bg-vice/15 text-[#ff9fc4] hover:bg-vice/25",
-        variant === "success" && "bg-[#7be3ae] text-obsidian hover:bg-[#93ebbd]",
+        variant === "secondary" && "border border-line-strong bg-panel-2 text-warm hover:border-lavender/35 hover:bg-line",
+        variant === "danger" && "bg-vice/15 text-danger-soft hover:bg-vice/25",
+        variant === "success" && "bg-success text-obsidian hover:bg-success-soft",
         className,
       )}
     />
@@ -105,7 +105,7 @@ export const select = `${input} appearance-none bg-[url("data:image/svg+xml,%3Cs
 
 /** One divided strip of figures instead of a row of separate cards. */
 export function StatStrip({ items }: { items: { label: string; value: ReactNode; hint?: string; tone?: "action" | "good" | "bad" | "info"; href?: string }[] }) {
-  const tones = { action: "text-sunset", good: "text-[#9ef0c4]", bad: "text-[#ff8fbb]", info: "text-lavender" };
+  const tones = { action: "text-sunset", good: "text-success-soft", bad: "text-danger-soft", info: "text-lavender" };
   return (
     <dl className="grid grid-cols-2 overflow-hidden rounded-2xl border border-line bg-panel sm:grid-cols-3 xl:grid-cols-6">
       {items.map((s) => {
@@ -192,7 +192,13 @@ export function Pagination({ page, pages, total, perPage, href }: { page: number
 export function age(d: Date | string | null | undefined) {
   if (!d) return "—";
   const m = Math.max(0, Math.round((Date.now() - new Date(d).getTime()) / 60_000));
-  return m < 60 ? `${m} min` : m < 48 * 60 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`;
+  return m < 1 ? "now" : m < 60 ? `${m} min` : m < 48 * 60 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`;
+}
+
+/** "just now", "12 min ago", "3 h ago", "2 d ago". */
+export function ago(d: Date | string | null | undefined) {
+  const a = age(d);
+  return a === "—" ? a : a === "now" ? "just now" : `${a} ago`;
 }
 
 export const EMAIL_LABELS: Record<string, string> = {
@@ -220,8 +226,8 @@ export function RetryButton({ id, back, action }: { id: string; back: string; ac
 }
 
 const EMAIL_TONES: Record<string, string> = {
-  sent: "bg-[#7be3ae]/15 text-[#9ef0c4]",
-  failed: "bg-vice/15 text-[#ff9fc4]",
+  sent: "bg-success/15 text-success-soft",
+  failed: "bg-vice/15 text-danger-soft",
   skipped: "bg-warm/8 text-warm/60",
   pending: "bg-sunset/15 text-sunset",
 };

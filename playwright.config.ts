@@ -24,6 +24,9 @@ export default defineConfig({
     // Isolated test database; forwarding headers trusted so API tests can simulate distinct clients.
     env: {
       PGLITE_DIR: ".data/pglite-test",
+      // Isolated test-mode build (scripts/e2e.mjs): checkout off, test orders with sample wallets.
+      NEXT_DIST_DIR: ".next-e2e",
+      NEXT_PUBLIC_CHECKOUT_TEST_MODE: "1",
       TRUST_PROXY: "1",
       // Deterministic quotes: fixed indicative rates (flagged preview), no network calls.
       RATES_MODE: "fixed",

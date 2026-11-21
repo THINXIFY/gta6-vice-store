@@ -35,10 +35,10 @@ export const infoPages: Record<PageId, InfoPage> = {
     id: "about",
     title: "About us",
     heading: "About VICE STORE",
-    description: "Who we are, what we sell and how we work: an independent store for Grand Theft Auto VI with manual, human-checked cryptocurrency payments.",
+    description: "Who we are, what we sell and how we work: a store for Grand Theft Auto VI with manual, human-checked cryptocurrency payments.",
     schemaType: "AboutPage",
     updated: null,
-    intro: "VICE STORE is an independent online store for Grand Theft Auto VI on PlayStation 5 and Xbox Series X|S. We are not Rockstar Games or Take-Two Interactive, and we are not affiliated with, endorsed or sponsored by them.",
+    intro: "VICE STORE is an online store for Grand Theft Auto VI on PlayStation 5 and Xbox Series X|S. We are not Rockstar Games or Take-Two Interactive, and we are not affiliated with, endorsed or sponsored by them.",
     sections: [
       {
         id: "what-we-do",
@@ -124,7 +124,7 @@ export const infoPages: Record<PageId, InfoPage> = {
       {
         id: "who-we-are",
         heading: "1. Who we are",
-        body: [`This store is operated by ${SELLER} ({{country of registration}}, {{company registration number}}), {{business address}}. Contact: {{support email address}}. We are an independent retailer, not affiliated with Rockstar Games or Take-Two Interactive.`],
+        body: [`This store is operated by ${SELLER} ({{country of registration}}, {{company registration number}}), {{business address}}. Contact: {{support email address}}. We are not affiliated with Rockstar Games or Take-Two Interactive.`],
       },
       {
         id: "products",
