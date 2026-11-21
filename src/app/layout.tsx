@@ -3,7 +3,7 @@ import { Big_Shoulders, Hanken_Grotesk } from "next/font/google";
 import { headers } from "next/headers";
 import { Header } from "@/components/layout/Header";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
-import { game } from "@/config/product";
+import { commerce } from "@/config/product";
 import { site } from "@/config/site";
 import { shareImage } from "@/config/media";
 import { isUsable } from "@/lib/media";
@@ -17,17 +17,34 @@ const MOTION_BOOT = `if(matchMedia("(prefers-reduced-motion: no-preference)").ma
 /** Flip to "true" at launch. Keeps placeholder builds out of search indexes. */
 const indexable = process.env.NEXT_PUBLIC_INDEXABLE === "true";
 
+// Under 160 characters. Purchase wording only once checkout is genuinely open.
+const description = commerce.checkoutEnabled
+  ? `Buy GTA VI Standard or Ultimate Edition for PS5 and Xbox Series X|S. Compare what each edition includes and pay in crypto. Independent retailer.`
+  : `Compare GTA VI Standard and Ultimate Edition for PS5 and Xbox Series X|S: prices, what each includes and which to choose. Independent retailer.`;
+
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
-  title: { default: `Buy ${game.title} (GTA VI) for PS5 and Xbox Series X|S | ${site.name}`, template: `%s | ${site.name}` },
-  description: `Buy ${game.title} for PS5 or Xbox Series X|S. Compare GTA VI Standard and Ultimate Edition, see what each includes and choose your platform. ${site.shortDisclaimer}`,
+  applicationName: site.name,
+  title: { default: `${site.title} | ${site.name}`, template: `%s | ${site.name}` },
+  description,
   alternates: { canonical: "/" },
-  // Only a usable (licensed, or local-preview) image is ever referenced.
-  ...(isUsable(shareImage) && {
-    openGraph: { images: [{ url: shareImage.src, width: shareImage.width, height: shareImage.height, alt: shareImage.alt }] },
-    twitter: { card: "summary_large_image", images: [shareImage.src] },
-  }),
+  openGraph: {
+    type: "website",
+    siteName: site.name,
+    locale: site.locale.replace("-", "_"),
+    url: "/",
+    title: `${site.title} | ${site.name}`,
+    description,
+    // A usable (licensed, or local-preview) key-art image; otherwise the generated brand card (opengraph-image.tsx).
+    ...(isUsable(shareImage) && { images: [{ url: shareImage.src, width: shareImage.width, height: shareImage.height, alt: shareImage.alt }] }),
+  },
+  twitter: { card: "summary_large_image", title: `${site.title} | ${site.name}`, description, ...(isUsable(shareImage) && { images: [shareImage.src] }) },
   robots: { index: indexable, follow: indexable },
+  // Search Console / Bing Webmaster ownership tokens (meta-tag method), set per environment.
+  verification: {
+    ...(process.env.GOOGLE_SITE_VERIFICATION && { google: process.env.GOOGLE_SITE_VERIFICATION }),
+    ...(process.env.BING_SITE_VERIFICATION && { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }),
+  },
 };
 
 export const viewport: Viewport = {

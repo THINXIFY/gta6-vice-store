@@ -14,6 +14,7 @@ import { quoteAmount } from "@/lib/orders/quote";
 import { orderStore } from "@/lib/orders/store";
 import { cn } from "@/lib/utils";
 import { CoinIcon } from "./CoinIcon";
+import { PolicyLinks } from "./PolicyLinks";
 
 const focusRing = "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-lavender has-[:focus-visible]:outline-solid";
 const fieldClass =
@@ -285,6 +286,7 @@ export function CheckoutForm({ initialEdition, initialPlatform, catalog }: { ini
           <p className="mt-3 text-center text-sm text-warm/50">
             Your amount is held for {quoteMinutes} minutes on the next step.
           </p>
+          <PolicyLinks className="mt-3 text-center text-xs leading-relaxed text-warm/50" />
         </div>
       </div>
     </form>

@@ -1,4 +1,4 @@
-import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import net from "node:net";
 import path from "node:path";
 
@@ -9,6 +9,8 @@ import path from "node:path";
  */
 export const MAIL_DIR = path.join(process.cwd(), ".data", "test-mail");
 export const MAIL_PORT = 2526;
+/** While this file exists the inbox rejects messages (to test failed-email retry). */
+export const FAIL_SWITCH = path.join(MAIL_DIR, "FAIL");
 
 export default async function setup() {
   rmSync(MAIL_DIR, { recursive: true, force: true });
@@ -26,7 +28,10 @@ export default async function setup() {
         const line = buf.slice(0, i);
         buf = buf.slice(i + 2);
         if (data !== null) {
-          if (line === ".") {
+          if (line === "." && existsSync(FAIL_SWITCH)) {
+            data = null;
+            sock.write("451 4.3.0 Temporary failure (test switch)\r\n");
+          } else if (line === ".") {
             writeFileSync(path.join(MAIL_DIR, `${Date.now()}-${++n}.json`), JSON.stringify({ to, raw: data }));
             data = null;
             sock.write("250 2.0.0 stored\r\n");

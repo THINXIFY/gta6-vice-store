@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CheckoutShell } from "@/components/checkout/CheckoutShell";
 import { PaymentInvoice } from "@/components/checkout/PaymentInvoice";
 
-export const metadata: Metadata = { title: "Payment", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Payment", robots: { index: false, follow: false }, alternates: { canonical: "/checkout/payment" } };
 
 export default async function PaymentPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { id = "" } = await searchParams;

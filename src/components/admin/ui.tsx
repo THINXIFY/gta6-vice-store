@@ -203,8 +203,21 @@ export const EMAIL_LABELS: Record<string, string> = {
   info_required: "Information required",
   game_ready: "Game ready",
   admin_submission: "Admin alert: payment to review",
+  support_received: "Support: message received",
+  admin_support: "Admin alert: support message",
   test: "Test email",
 };
+
+/** Owner-only retry for a failed email (server action passed in to keep this file server-safe). */
+export function RetryButton({ id, back, action }: { id: string; back: string; action: (f: FormData) => Promise<void> }) {
+  return (
+    <form action={action} className="inline">
+      <input type="hidden" name="id" value={id} />
+      <input type="hidden" name="back" value={back} />
+      <button className="rounded-md border border-line-strong px-2 py-0.5 text-[0.6875rem] font-semibold text-warm/80 transition-colors hover:border-lavender/40 hover:text-warm">Retry</button>
+    </form>
+  );
+}
 
 const EMAIL_TONES: Record<string, string> = {
   sent: "bg-[#7be3ae]/15 text-[#9ef0c4]",

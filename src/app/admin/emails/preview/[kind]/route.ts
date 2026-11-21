@@ -5,7 +5,7 @@ import { renderEmail, type EmailKind } from "@/server/email/templates";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const KINDS: EmailKind[] = ["order_created", "payment_submitted", "payment_approved", "payment_rejected", "info_required", "game_ready", "admin_submission", "test"];
+const KINDS: EmailKind[] = ["order_created", "payment_submitted", "payment_approved", "payment_rejected", "info_required", "game_ready", "admin_submission", "support_received", "admin_support", "test"];
 
 /** Admin-only preview of each template with sample data (?format=text for the plain-text part). */
 export async function GET(req: Request, { params }: { params: Promise<{ kind: string }> }) {
@@ -19,6 +19,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ kind: st
     note,
     fulfillmentKind: "redemption_code",
     linkDays: RELEASE_LINK_DAYS,
+    support: { reference: "SUP-4H8T2C", topic: "A payment", paymentId: sampleOrder.paymentId, name: "Maria", email: "buyer@example.com", message: "I sent the payment 40 minutes ago but my order still shows as submitted. Could you check it?", isTest: true },
   });
   const text = new URL(req.url).searchParams.get("format") === "text";
   return new Response(text ? `Subject: ${email.subject}\n\n${email.text}` : email.html, {

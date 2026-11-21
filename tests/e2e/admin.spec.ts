@@ -1,6 +1,8 @@
 import { createHmac } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
+import { rmSync, writeFileSync } from "node:fs";
 import { readInbox } from "./mail";
+import { FAIL_SWITCH } from "./mail-sink";
 
 /**
  * Admin dashboard end to end. Serial, desktop project only, one signed-in session reused
@@ -297,7 +299,7 @@ test("emails: settings page, test email delivered over SMTP, template previews a
   await admin.getByLabel("Send to").fill("owner@vice.test");
   await admin.getByRole("button", { name: "Send test email" }).click();
   await expect(admin.getByRole("status")).toContainText("Test email sent to owner@vice.test");
-  expect(readInbox().some((m) => m.subject === "[Test] Test email from VICE admin")).toBe(true);
+  expect(readInbox().some((m) => m.subject === "[Test] Test email from VICE STORE admin")).toBe(true);
   await expect(admin.locator("section", { hasText: "Delivery log" })).toContainText("Test email");
 
   const preview = await admin.request.get("/admin/emails/preview/payment_rejected");
@@ -320,4 +322,38 @@ test("overview keeps live and test figures apart; orders list sorts, filters and
   // Live builds have no orders at all (checkout closed): then the empty state shows instead.
   if (await admin.getByText("No orders match these filters").count()) await expect(admin.getByRole("navigation", { name: "Pagination" })).toHaveCount(0);
   else await expect(admin.getByRole("navigation", { name: "Pagination" })).toContainText(/1–\d+ of \d+/);
+});
+
+test("failed emails can be retried by an owner; support messages can be resolved", async ({ request }) => {
+  // Make the inbox reject mail, send a test email (fails), then retry once delivery works.
+  writeFileSync(FAIL_SWITCH, "1");
+  try {
+    await admin.goto("/admin/emails");
+    await admin.getByLabel("Send to").fill("retry@vice.test");
+    await admin.getByRole("button", { name: "Send test email" }).click();
+    await expect(admin.locator("main").getByRole("alert")).toContainText("could not be sent");
+  } finally {
+    rmSync(FAIL_SWITCH, { force: true });
+  }
+  const row = admin.locator("tr", { hasText: "retry@vice.test" }).first();
+  await expect(row).toContainText("failed");
+  await row.getByRole("button", { name: "Retry" }).click();
+  await expect(admin.getByRole("status")).toContainText("Email sent.");
+  await expect(admin.locator("tr", { hasText: "retry@vice.test" }).first()).toContainText("2 attempts");
+
+  // Support: a contact-form message appears in Admin → Support and can be resolved and reopened.
+  const sent = await request.post("/api/support", { headers: { "x-forwarded-for": ip() }, data: { email: "help@example.com", topic: "delivery", message: "Where is my game? I paid yesterday." } });
+  test.skip(sent.status() === 409, "contact form is unpublished in live builds");
+  const { reference } = (await sent.json()) as { reference: string };
+  await admin.goto("/admin/support");
+  const item = admin.locator("li", { hasText: reference });
+  await expect(item).toContainText("Where is my game?");
+  await expect(item).toContainText("Game delivery");
+  await item.getByRole("button", { name: "Mark resolved" }).click();
+  await expect(admin.getByRole("status")).toContainText("Marked as resolved");
+  await admin.goto("/admin/support?view=resolved");
+  await admin.locator("li", { hasText: reference }).getByRole("button", { name: "Reopen" }).click();
+  await expect(admin.getByRole("status")).toContainText("Reopened");
+  expect(readInbox().some((m) => m.subject.includes(reference) && m.subject.includes("We received your message"))).toBe(true);
+  expect(readInbox().some((m) => m.subject.includes(`Support message ${reference}`))).toBe(true);
 });

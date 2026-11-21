@@ -37,7 +37,7 @@ export function LoginForm() {
             aria-describedby="code-hint"
           />
           <span id="code-hint" className="text-xs font-normal text-warm/50">
-            Open your authenticator app and enter the 6-digit code for VICE admin.
+            Open your authenticator app and enter the 6-digit code for VICE STORE admin.
           </span>
         </label>
       )}

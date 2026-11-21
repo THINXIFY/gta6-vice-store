@@ -7,6 +7,8 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
   gsap.defaults({ ease: "expo.out", duration: 1.1 });
+  // Some layers are optional (e.g. the drawn hero's numeral when licensed art is shown).
+  gsap.config({ nullTargetWarn: false });
 }
 
 /** Media-query conditions for gsap.matchMedia(). */

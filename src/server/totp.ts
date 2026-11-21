@@ -9,7 +9,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 const B32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
 const STEP_SECONDS = 30;
-export const TOTP_ISSUER = "VICE admin";
+export const TOTP_ISSUER = "VICE STORE admin";
 
 export function newTotpSecret(): string {
   const bytes = randomBytes(20);

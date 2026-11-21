@@ -70,7 +70,18 @@ test.describe("FAQ", () => {
   test("structured data reflects verified content only", async ({ page }) => {
     await page.goto("/");
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
-    const data = blocks.map((b) => JSON.parse(b) as Record<string, unknown>);
+    const data = blocks.flatMap((b) => ((JSON.parse(b) as { "@graph"?: Record<string, unknown>[] })["@graph"] ?? [JSON.parse(b)]) as Record<string, unknown>[]);
+    const types = data.map((d) => d["@type"]);
+    // Commercial and identity markup stays off until real (checkout closed, seller unconfirmed).
+    for (const t of ["Product", "Offer", "Organization", "AggregateRating", "Review"]) expect(types).not.toContain(t);
+    expect(types).toContain("WebSite");
+    const videos = data.filter((d) => d["@type"] === "VideoObject");
+    expect(videos.length).toBeGreaterThan(0);
+    for (const v of videos) {
+      expect(v.uploadDate).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+      expect(v.duration).toMatch(/^PT\d+M\d+S$/);
+      expect(v.thumbnailUrl).toMatch(/^https:\/\/i\.ytimg\.com\//);
+    }
     const game = data.find((d) => d["@type"] === "VideoGame")!;
     expect(game.name).toBe("Grand Theft Auto VI");
     expect(game).not.toHaveProperty("offers");

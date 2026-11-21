@@ -73,10 +73,10 @@ export function Hero({ fromCents }: { fromCents?: number | null }) {
                   <span key={line} className="block overflow-hidden pb-[0.05em]">
                     <span data-hero-line className="block will-change-transform">
                       {line}
-                    </span>
+                    </span>{" "}
                   </span>
                 ))}
-              </span>
+              </span>{" "}
               <span data-hero-product className="mt-4 block font-display text-[clamp(1.05rem,0.85rem+0.85vw,1.65rem)] leading-none font-extrabold tracking-[0.24em] text-warm/90 uppercase">
                 {heroCopy.product}
               </span>

@@ -24,7 +24,7 @@ export default async function Home() {
   return (
     <PageMotion>
       <main id="main" className="overflow-x-clip" data-media-preview={mediaPreview || undefined} data-content-preview={contentPreview || undefined}>
-        <StructuredData />
+        <StructuredData catalog={catalog} />
         <Hero fromCents={fromCents} />
 
         {/* Selection is shared from the configurator through to the closing CTA. */}

@@ -2,13 +2,13 @@ import { ArrowLeft, ExternalLink, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ScreenshotViewer } from "@/components/admin/ScreenshotViewer";
-import { Button, Card, EMAIL_LABELS, EmailStatus, Field, Flash, input, label, StatusBadge, TestPill, usd, when } from "@/components/admin/ui";
+import { Button, Card, EMAIL_LABELS, EmailStatus, Field, RetryButton, Flash, input, label, StatusBadge, TestPill, usd, when } from "@/components/admin/ui";
 import { networks, type NetworkId } from "@/config/payments";
 import { editions, platforms } from "@/config/product";
 import { networkLabel } from "@/lib/orders/methods";
 import { statusInfo } from "@/lib/orders/types";
 import { CHECKLIST, orderDetail } from "@/server/admin";
-import { reviewAction } from "../../../actions";
+import { retryEmailAction, reviewAction } from "../../../actions";
 import { requireAdmin } from "@/server/auth";
 import { emailLog } from "@/server/email";
 
@@ -142,6 +142,7 @@ export default async function OrderPage({ params, searchParams }: Props) {
                       </span>
                     </span>
                     <span className="flex items-center gap-2 text-xs text-warm/45">
+                      {m.status === "failed" && me.role === "owner" && <RetryButton id={m.id} back={`/admin/orders/${o.paymentId}`} action={retryEmailAction} />}
                       <EmailStatus status={m.status} />
                       {when(m.sentAt ?? m.createdAt)}
                     </span>

@@ -332,3 +332,32 @@ export const emailMessages = pgTable(
     check("email_messages_dedupe_unique_key", sql`length(${t.dedupeKey}) between 3 and 200`),
   ],
 );
+
+/** Customer support messages from the contact form (Admin → Support). Never deleted. */
+export const supportMessages = pgTable(
+  "support_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    /** Customer-facing reference, e.g. SUP-7K2M9Q. */
+    reference: text("reference").notNull(),
+    name: text("name"),
+    email: text("email").notNull(),
+    topic: text("topic").notNull(),
+    paymentId: text("payment_id"),
+    message: text("message").notNull(),
+    status: text("status").notNull().default("open"),
+    isTest: boolean("is_test").notNull(),
+    ipHash: text("ip_hash"),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+    resolvedBy: text("resolved_by"),
+    createdAt: created(),
+  },
+  (t) => [
+    uniqueIndex("support_messages_reference_key").on(t.reference),
+    index("support_messages_status_idx").on(t.status, t.createdAt),
+    check("support_messages_status", sql`${t.status} in ('open', 'resolved')`),
+    check("support_messages_topic", sql`${t.topic} in ('order', 'payment', 'delivery', 'refund', 'other')`),
+    check("support_messages_lengths", sql`length(${t.message}) between 10 and 4000 and length(${t.email}) <= 254 and (${t.name} is null or length(${t.name}) <= 120)`),
+    check("support_messages_payment_id", sql`${t.paymentId} is null or ${t.paymentId} ~ '^VICE-[0-9A-HJKMNP-TV-Z]{8}$'`),
+  ],
+);

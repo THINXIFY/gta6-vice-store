@@ -172,7 +172,8 @@ export async function sendMail(config: SmtpConfig, mail: Mail): Promise<{ messag
     await c.send(`RCPT TO:<${message.to}>`, [250, 251]);
     await c.send("DATA", [354]);
     // Base64 bodies never start a line with ".", but stuff anyway for safety.
-    const response = await c.send(message.data.replace(/^\./gm, "..") + "\r\n.", [250]);
+    c.socket.write(message.data.replace(/^\./gm, "..") + "\r\n.\r\n");
+    const response = await c.expect([250], "message");
     await c.send("QUIT", [221]).catch(() => undefined);
     return { messageId: message.messageId, response: response.slice(0, 200) };
   } finally {

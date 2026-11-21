@@ -66,3 +66,22 @@
 - **Emails page**: configuration, an owner-only test email, template previews and the delivery log.
 - **Embedded database lock**: PGlite is single-process. `scripts/pglite-lock.mjs` places a PID lock next to the data folder, used by the app and the scripts. A second process gets a clear error instead of corrupting the database.
 - **Password rotation**: `scripts/admin-rotate-password.mjs <email>` sets a random password, ends sessions, writes an audit entry and saves the password to a git-ignored file in `.data/`.
+
+## GTA-11A: information pages and support
+
+- **Pages**: `/about`, `/contact`, `/terms`, `/privacy`, `/refund-policy` and `/cookies`, rendered by `components/info/InfoPage`. Content is in the server-only `src/config/legal.ts`.
+- **Publishing**: each page has one `published` flag in `site.pages`. An unpublished page:
+  - returns 404 on the live site and is never linked;
+  - renders in content preview as a draft marked `data-status="draft"` and `noindex`;
+  - shows unconfirmed facts as visible "To confirm" chips (`{{…}}` in the source).
+- **To publish a page**:
+  1. Resolve every marker.
+  2. Set `updated`.
+  3. Set `published: true`.
+- **What appears where**: the footer, checkout policy links, structured data (WebPage, AboutPage or ContactPage, plus BreadcrumbList) and `sitemap.ts` all follow the flags. The sitemap lists only published pages, and only when `NEXT_PUBLIC_INDEXABLE=true`.
+- **Advertising and cookies**: no ads, analytics or tracking cookies exist today, and the drafts say so. Before adding AdSense, add a consent mechanism (a Google-certified consent management platform where required) and update the privacy and cookie pages.
+- **Support**:
+  - `POST /api/support` checks the origin, allows 5 messages per IP per hour, and drops honeypot submissions silently.
+  - Messages are stored in `support_messages`, which is validated and cannot be deleted. They appear in Admin → Support, where they can be resolved and reopened (audited).
+  - Each message sends a confirmation to the customer and an alert to admins.
+- **Email retry**: owners can retry failed emails (`retryEmail`). The email is rebuilt from current records on the same log row. A game-ready retry issues a fresh release key. An order-created retry links to the status page without the private key.

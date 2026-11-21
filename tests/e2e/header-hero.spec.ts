@@ -28,12 +28,19 @@ test("Buy now scrolls to editions without enabling checkout", async ({ page }) =
   }
 });
 
-test("header gains a solid background after scrolling", async ({ page }) => {
+test("floating glass header deepens after scrolling; nav pill follows the section", async ({ page, isMobile }) => {
   await page.goto("/");
   const header = page.getByRole("banner");
-  await expect(header).not.toHaveClass(/bg-obsidian(\s|$)/);
+  await expect(header).not.toHaveAttribute("data-scrolled");
   await page.mouse.wheel(0, 600);
-  await expect(header).toHaveClass(/bg-obsidian(\s|$)/);
+  await expect(header).toHaveAttribute("data-scrolled", "true");
+  if (isMobile) return;
+  const nav = header.getByRole("navigation", { name: "Primary" });
+  for (const label of ["Home", "Editions", "Explore", "Trailers", "FAQ"]) await expect(nav.getByRole("link", { name: label })).toBeVisible();
+  await nav.getByRole("link", { name: "Editions" }).click();
+  await expect(nav.getByRole("link", { name: "Editions" })).toHaveAttribute("aria-current", "location");
+  await nav.getByRole("link", { name: "Explore" }).focus();
+  await expect(nav.getByRole("link", { name: "Explore" })).toBeFocused();
 });
 
 test.describe("mobile menu", () => {

@@ -5,7 +5,7 @@ import { defaultEdition, defaultPlatform, editions, platforms } from "@/config/p
 import type { EditionId, PlatformId } from "@/config/types";
 import { getCatalog } from "@/server/catalog";
 
-export const metadata: Metadata = { title: "Checkout", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Checkout", robots: { index: false, follow: false }, alternates: { canonical: "/checkout" } };
 
 type Search = Promise<{ edition?: string; platform?: string }>;
 

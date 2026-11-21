@@ -6,15 +6,16 @@ import { checkoutOpen } from "@/lib/checkout";
 import { reviewCount } from "@/server/admin";
 import { requireAdmin } from "@/server/auth";
 import { emailSettings } from "@/server/email";
+import { openSupportCount } from "@/server/support";
 import { logoutAction } from "../actions";
 
 export default async function DashLayout({ children }: { children: ReactNode }) {
   const me = await requireAdmin(undefined, { allowWithout2fa: true }); // each page enforces 2FA itself
-  const toReview = await reviewCount();
+  const [toReview, openSupport] = await Promise.all([reviewCount(), openSupportCount()]);
   const mail = emailSettings().mode;
   return (
     <div className="lg:flex">
-      <Sidebar email={me.email} role={me.role} reviewCount={toReview} logout={logoutAction} />
+      <Sidebar email={me.email} role={me.role} reviewCount={toReview} supportCount={openSupport} logout={logoutAction} />
       <div className="min-w-0 flex-1">
         <header className="sticky top-0 z-20 flex h-14 items-center gap-3 border-b border-line bg-admin/85 px-4 backdrop-blur-md sm:px-8 lg:h-16">
           <form action="/admin/orders" role="search" className="relative w-full max-w-md">

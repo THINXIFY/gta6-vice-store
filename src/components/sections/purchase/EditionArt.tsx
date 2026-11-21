@@ -90,14 +90,16 @@ export function EditionArt({ edition, platform, className, sizes = "50vw" }: { e
           <stop offset="0" stopColor={p.halo} stopOpacity="0" />
           <stop offset="1" stopColor={p.halo} stopOpacity="0.38" />
         </linearGradient>
-        <filter id={id("wisp")} x="-20%" y="-300%" width="140%" height="700%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.006 0.05" numOctaves="4" seed={edition === "ultimate" ? 8 : 5} />
-          <feDisplacementMap in="SourceGraphic" scale="70" />
-          <feGaussianBlur stdDeviation="3.5" />
-        </filter>
+        {/* Cloud streaks fade at both ends. A gradient, not an SVG filter: filters (noise +
+            displacement + blur) re-rasterise on every repaint and made selection changes slow (INP). */}
+        <linearGradient id={id("wisp")} x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor={p.halo} stopOpacity="0" />
+          <stop offset="0.45" stopColor={p.halo} stopOpacity="1" />
+          <stop offset="1" stopColor={p.halo} stopOpacity="0" />
+        </linearGradient>
       </defs>
       <rect width="1600" height="1000" fill={`url(#${id("sky")})`} />
-      <g filter={`url(#${id("wisp")})`} fill={p.halo}>
+      <g fill={`url(#${id("wisp")})`}>
         <ellipse cx="1300" cy="330" rx="520" ry="10" opacity="0.1" />
         <ellipse cx="900" cy="480" rx="640" ry="12" opacity="0.14" />
         <ellipse cx="1420" cy="585" rx="380" ry="8" opacity="0.2" />

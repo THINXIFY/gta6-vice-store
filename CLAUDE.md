@@ -1,4 +1,4 @@
-# VICE storefront
+# VICE STORE storefront
 
 Independent retailer landing page + storefront for Grand Theft Auto VI. Creative direction: "VICE — Cinematic Commerce" (cinematic Vice City storytelling + Apple-clean purchasing).
 
@@ -30,6 +30,7 @@ tests/e2e/          Playwright (desktop + mobile projects)
 - Colors: obsidian #08080D, midnight #171020, vice #FF579A, sunset #FF9B62, lavender #B28CFF, warm #FFF4EB. Use opacity modifiers (`text-warm/72`) for hierarchy.
 - Type: `font-display` Big Shoulders (uppercase, extrabold, `text-display-{xl,lg,md}`), `font-sans` Hanken Grotesk (`text-title`, `text-lead`).
 - Rhythm: `px-gutter`, `py-section`, `max-w-content`, `max-w-measure`. Radii: `rounded-control` (pills), `rounded-media`.
+- The header (`glass-bar`, `nav-pill` in globals.css) is the only glass surface; keep glassmorphism out of everything else.
 - Gradients only on large surfaces (`bg-dusk`, `bg-sunset-glow`, `text-sunset`). Avoid: glassmorphism, neon borders, card grids everywhere, all-caps eyebrow labels, motion on every element.
 - Project skill `.claude/skills/frontend-design` applies to all UI work.
 - `Button variant="sunset"` is the signature purchase CTA — header, hero and the closing CTA only. Film grain via the `grain` utility.
@@ -44,6 +45,8 @@ tests/e2e/          Playwright (desktop + mobile projects)
 - Backend: Drizzle + Postgres (`src/db/schema.ts`, `drizzle/`, `src/server/*` server-only). Admin dashboard at `/admin` (auth in `src/server/auth.ts`; every page/action calls `requireAdmin()` itself). CSP nonce via `src/proxy.ts`. Local/tests use PGlite (`.data/`). Never import `src/server/*` from client code. See docs/checkout-architecture.md.
 - 09C: rates `src/server/rates.ts` (server-only, locked 30 min), QR `src/lib/qr.ts` + `lib/orders/paymentUri.ts` (no deps), admin TOTP `src/server/totp.ts` (`ADMIN_REQUIRE_2FA`), screenshot retention (`SCREENSHOT_RETENTION_DAYS`, purge-only trigger). Never run `next build` while a dev server holds the PGlite DB (enforced by `scripts/pglite-lock.mjs`).
 - 09D email: `src/server/email/*` (own SMTP client, templates, `notifyOrder` after commit, `email_messages` dedupe log, no bodies stored). `EMAIL_MODE=test` default (redirect to `EMAIL_TEST_RECIPIENT`); live only with checkoutEnabled. Game-ready email links with a 30-day release key, never the code. `npm run test:email`; Playwright uses a fake inbox (`tests/e2e/mail-sink.ts`).
+- Brand/SEO (GTA-BRAND-01/11B): brand, tagline, title and domain live in `site.ts` (`<Wordmark>` renders VICE + sunset STORE); domain only via `NEXT_PUBLIC_SITE_URL` (never Rockstar/Take-Two marks). `robots.ts`/`sitemap.ts` closed until `NEXT_PUBLIC_INDEXABLE=true`. JSON-LD is one gated `@graph` (Organization only with seller name; Product/Offer only when checkout open + policies published). `next build` never opens PGlite. Strategy and audit: docs/seo-strategy.md.
+- Info pages (GTA-11A): content in server-only `config/legal.ts`, publish flags in `site.pages`; support in `server/support.ts` → Admin → Support.
 - Admin (GTA-10): live/test stats never mixed; orders list sort/filter/pagination; CSV export owner-only + audited; /admin/emails. Correlated subqueries must use `ORDER_ID` (qualified), not `${s.orders.id}`.
 - Checkout: `src/config/payments.ts` (assets, networks, wallet slots: offered only when validated + address), `src/lib/orders/*` (types + admin transitions, Payment IDs, quotes, `orderStore` boundary). Reachable only with checkoutEnabled or content preview. Redemption codes never in frontend config.
 - Policy/commercial copy (steps, assurances, FAQ) lives in server-only `src/config/policies.ts`: never import it from a "use client" file. Drafts render only with NEXT_PUBLIC_CONTENT_PREVIEW=1 (marked `data-status="draft"`).

@@ -3,9 +3,14 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { Glow } from "@/components/ui/Atmosphere";
 import { Container } from "@/components/ui/Layout";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { game, platforms } from "@/config/product";
 import { site } from "@/config/site";
+import { checkoutAvailable } from "@/lib/checkout";
 import { contentPreview } from "@/lib/media";
+import { pageHref } from "@/lib/pages";
+
+const LEGAL = ["terms", "privacy", "refunds", "cookies"] as const;
 
 const linkClass =
   "relative inline-block py-1 text-warm/70 transition-colors duration-300 hover:text-warm " +
@@ -50,8 +55,9 @@ function Column({ title, children }: { title: string; children: ReactNode }) {
 export function Footer({ base = "" }: { base?: "" | "/" }) {
   const year = new Date().getFullYear();
   const platformList = new Intl.ListFormat("en", { type: "conjunction" }).format(platforms.filter((p) => p.verified).map((p) => p.name));
-  const supportHref = site.support.url || (site.support.email ? `mailto:${site.support.email}` : "");
-  const legal = site.legal.filter((l) => l.href || contentPreview);
+  // Contact page when published (or as a draft in preview); otherwise a configured support URL/email.
+  const supportHref = pageHref("contact") || site.support.url || (site.support.email ? `mailto:${site.support.email}` : "");
+  const legal = LEGAL.map((id) => ({ id, label: site.pages[id].label, href: pageHref(id) })).filter((l) => l.href || contentPreview);
   const rating = game.ageRating.verified ? `Rated PEGI ${game.ageRating.value.pegi} and ESRB ${game.ageRating.value.esrb}.` : null;
 
   return (
@@ -63,7 +69,7 @@ export function Footer({ base = "" }: { base?: "" | "/" }) {
         <div className="grid gap-14 lg:grid-cols-12 lg:gap-8">
           <div className="lg:col-span-5">
             <a href={`${base}#overview`} className="inline-flex items-center gap-4" aria-label={`${site.name}, back to top`}>
-              <span className="font-display text-[2.25rem] leading-none font-extrabold tracking-[0.06em]">{site.name}</span>
+              <Wordmark className="text-[2.25rem]" />
               <span aria-hidden className="h-7 w-px bg-warm/20" />
               <span className="text-xs leading-tight font-medium text-warm/55">
                 Independent
@@ -93,8 +99,9 @@ export function Footer({ base = "" }: { base?: "" | "/" }) {
               ))}
             </Column>
             <Column title="Help">
-              <FooterLink label="FAQ" href={`${base}#faq`} />
-              <FooterLink label="Customer support" href={supportHref} />
+              {checkoutAvailable && <FooterLink label="Order status" href="/order-status" />}
+              <FooterLink label="Contact & support" href={supportHref} />
+              <FooterLink label="About us" href={pageHref("about")} />
             </Column>
             {legal.length > 0 && (
               <Column title="Legal">

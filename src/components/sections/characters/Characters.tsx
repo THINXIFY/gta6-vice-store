@@ -17,7 +17,7 @@ function Bio({ c, align }: { c: Character; align: "start" | "end" }) {
     <article data-bio={c.id} aria-labelledby={`character-${c.id}`} className={cn("max-w-[24rem]", align === "end" && "xl:ml-auto xl:text-right")}>
       <span aria-hidden className={cn("block h-1 w-12 rounded-full", accent[c.id], align === "end" && "xl:ml-auto")} />
       <h3 id={`character-${c.id}`} className="mt-5 font-display leading-[0.82] font-extrabold uppercase">
-        <span className="block text-[clamp(3.5rem,1.5rem+4vw,6rem)]">{c.firstName}</span>
+        <span className="block text-[clamp(3.5rem,1.5rem+4vw,6rem)]">{c.firstName}</span>{" "}
         <span className="mt-[0.08em] block text-[clamp(2rem,1.2rem+2.6vw,4rem)] text-warm/35">{c.lastName}</span>
       </h3>
       <p className="mt-5 leading-relaxed text-warm/72">{c.bio}</p>

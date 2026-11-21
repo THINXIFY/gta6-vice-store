@@ -1,13 +1,13 @@
 import { ExternalLink, MailX, Send } from "lucide-react";
-import { Button, Card, EMAIL_LABELS, EmailStatus, EmptyState, Field, Flash, input, label, PageHeader, when } from "@/components/admin/ui";
+import { Button, Card, EMAIL_LABELS, EmailStatus, EmptyState, Field, Flash, input, label, PageHeader, RetryButton, when } from "@/components/admin/ui";
 import { checkoutOpen } from "@/lib/checkout";
 import { requireAdmin } from "@/server/auth";
 import { emailLog, emailSettings } from "@/server/email";
-import { testEmailAction } from "../../actions";
+import { retryEmailAction, testEmailAction } from "../../actions";
 
 export const metadata = { title: "Emails" };
 
-const PREVIEWS = ["order_created", "payment_submitted", "payment_approved", "payment_rejected", "info_required", "game_ready", "admin_submission"];
+const PREVIEWS = ["order_created", "payment_submitted", "payment_approved", "payment_rejected", "info_required", "game_ready", "admin_submission", "support_received", "admin_support"];
 
 export default async function EmailsPage({ searchParams }: { searchParams: Promise<{ ok?: string; error?: string }> }) {
   const me = await requireAdmin();
@@ -102,8 +102,12 @@ export default async function EmailsPage({ searchParams }: { searchParams: Promi
                       {m.deliveredTo && <span className="block text-xs text-warm/45">Test copy to {m.deliveredTo}</span>}
                     </td>
                     <td className="px-3 py-3">
-                      <EmailStatus status={m.status} />
+                      <span className="flex items-center gap-2">
+                        <EmailStatus status={m.status} />
+                        {m.status === "failed" && me.role === "owner" && <RetryButton id={m.id} back="/admin/emails" action={retryEmailAction} />}
+                      </span>
                       {m.error && m.status !== "sent" && <span className="mt-1 block max-w-[18rem] text-xs text-warm/45">{m.error}</span>}
+                      {m.attempts > 1 && <span className="mt-1 block text-xs text-warm/40">{m.attempts} attempts</span>}
                     </td>
                     <td className="px-5 py-3 text-right text-xs whitespace-nowrap text-warm/55">{when(m.sentAt ?? m.createdAt)}</td>
                   </tr>

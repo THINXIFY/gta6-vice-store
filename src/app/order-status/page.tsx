@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { CheckoutShell } from "@/components/checkout/CheckoutShell";
 import { OrderStatusView } from "@/components/checkout/OrderStatus";
 
-export const metadata: Metadata = { title: "Order status", robots: { index: false, follow: false } };
+export const metadata: Metadata = { title: "Order status", robots: { index: false, follow: false }, alternates: { canonical: "/order-status" } };
 
 export default async function OrderStatusPage({ searchParams }: { searchParams: Promise<{ id?: string }> }) {
   const { id = "" } = await searchParams;

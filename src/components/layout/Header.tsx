@@ -1,15 +1,17 @@
 "use client";
 
-import { Menu, ShoppingBag, X } from "lucide-react";
+import { Menu, PackageSearch, ShoppingBag, X } from "lucide-react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type MouseEvent } from "react";
 import { getLenis, scrollToHash } from "@/components/motion/SmoothScroll";
 import { Button } from "@/components/ui/Button";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { platforms } from "@/config/product";
 import { site } from "@/config/site";
+import { checkoutAvailable } from "@/lib/checkout";
 import { cn } from "@/lib/utils";
 
-const wordmark = "font-display text-[1.75rem] leading-none font-extrabold tracking-[0.06em]";
 
 /** Tracks which nav section is currently under the header. */
 function useActiveSection(ids: string[]) {
@@ -32,14 +34,22 @@ function useActiveSection(ids: string[]) {
 
 const NAV_IDS = site.nav.map((n) => n.href);
 
+/**
+ * Floating glass header: brand left, centred navigation with a sliding glossy pill on the
+ * current section, utilities and the signature purchase CTA right. Below md the nav moves into
+ * a full-screen menu (native <dialog>: focus trap, Esc to close).
+ */
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const navRef = useRef<HTMLUListElement>(null);
+  const [pill, setPill] = useState<{ x: number; w: number } | null>(null);
   const active = useActiveSection(NAV_IDS);
   // Off the landing page, anchors point back to it ("/#editions") and navigate normally.
   const pathname = usePathname();
   const onHome = pathname === "/";
   const to = (hash: string) => (onHome ? hash : `/${hash}`);
+  const current = onHome ? active : "";
 
   useEffect(() => {
     let frame = 0;
@@ -54,6 +64,21 @@ export function Header() {
       window.removeEventListener("scroll", update);
     };
   }, []);
+
+  // Position the active pill under the current link (re-measured on resize and font load).
+  useLayoutEffect(() => {
+    const measure = () => {
+      const list = navRef.current;
+      const el = list?.querySelector<HTMLElement>(`a[href="${current}"]`);
+      if (!list || !el) return setPill(null);
+      const a = el.getBoundingClientRect();
+      setPill({ x: a.left - list.getBoundingClientRect().left, w: a.width });
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    if (navRef.current) ro.observe(navRef.current);
+    return () => ro.disconnect();
+  }, [current]);
 
   const openMenu = () => {
     dialogRef.current?.showModal();
@@ -79,17 +104,18 @@ export function Header() {
   if (pathname.startsWith("/admin")) return null;
 
   return (
-    <header
-      className={cn(
-        "fixed inset-x-0 top-0 z-40 border-b transition-[background-color,border-color] duration-500 ease-swift",
-        scrolled ? "border-warm/8 bg-obsidian" : "border-transparent bg-linear-to-b from-obsidian/75 to-transparent",
-      )}
-    >
-      <div className="mx-auto grid h-16 max-w-content grid-cols-[1fr_auto] items-center gap-6 px-gutter md:grid-cols-[1fr_auto_1fr] lg:h-20">
-        <a href={to("#overview")} onClick={navigate} className="flex items-center gap-4 justify-self-start" aria-label={`${site.name}, back to top`}>
-          <span className={wordmark}>{site.name}</span>
-          <span aria-hidden className="hidden h-6 w-px bg-warm/20 xl:block" />
-          <span className="hidden text-[0.6875rem] leading-[1.25] font-medium text-warm/55 xl:block">
+    <header data-scrolled={scrolled || undefined} className="pointer-events-none fixed inset-x-0 top-0 z-40 px-3 pt-3 sm:px-5 sm:pt-4">
+      <div
+        className={cn(
+          "glass-bar pointer-events-auto relative mx-auto grid h-14 max-w-[78rem] grid-cols-[1fr_auto] items-center gap-4 rounded-full pr-1.5 pl-5 sm:h-16 sm:pr-2 sm:pl-6 md:grid-cols-[1fr_auto_1fr]",
+          "transition-[background-color,box-shadow] duration-500 ease-swift",
+          scrolled ? "bg-[#0c0912]/80" : "bg-[#0c0912]/55",
+        )}
+      >
+        <a href={to("#overview")} onClick={navigate} className="flex items-center gap-3.5 justify-self-start rounded-full focus-visible:outline-offset-4" aria-label={`${site.name}, back to top`}>
+          <Wordmark className="text-[1.375rem] sm:text-[1.5rem]" />
+          <span aria-hidden className="hidden h-5 w-px bg-warm/15 xl:block" />
+          <span className="hidden text-[0.6875rem] leading-[1.2] font-medium text-warm/50 xl:block">
             Independent
             <br />
             retailer
@@ -97,19 +123,24 @@ export function Header() {
         </a>
 
         <nav aria-label="Primary" className="hidden md:block">
-          <ul className="flex items-center gap-1 lg:gap-2">
+          <ul ref={navRef} className="relative flex items-center rounded-full p-1">
+            {/* Glossy pill under the current section; slides between items. */}
+            <span
+              aria-hidden
+              className={cn("nav-pill pointer-events-none absolute top-1 bottom-1 left-0 rounded-full motion-safe:transition-[transform,width,opacity] motion-safe:duration-500 motion-safe:ease-cinematic", pill ? "opacity-100" : "opacity-0")}
+              style={{ width: pill?.w ?? 0, transform: `translateX(${pill?.x ?? 0}px)` }}
+            />
             {site.nav.map((item) => {
-              const current = onHome && active === item.href;
+              const isCurrent = current === item.href;
               return (
                 <li key={item.href}>
                   <a
                     href={to(item.href)}
                     onClick={navigate}
-                    aria-current={current ? "location" : undefined}
+                    aria-current={isCurrent ? "location" : undefined}
                     className={cn(
-                      "relative block px-3.5 py-2 text-[0.9375rem] font-medium transition-colors duration-300 lg:px-4",
-                      "after:absolute after:inset-x-3.5 after:-bottom-0.5 after:h-px after:origin-left after:bg-sunset after:transition-transform after:duration-500 after:ease-cinematic lg:after:inset-x-4",
-                      current ? "text-warm after:scale-x-100" : "text-warm/65 after:scale-x-0 hover:text-warm",
+                      "relative block rounded-full px-3.5 py-2 text-[0.875rem] font-medium tracking-[0.01em] transition-[color,background-color] duration-300 lg:px-[1.125rem]",
+                      isCurrent ? "text-warm" : "text-warm/60 hover:bg-white/[0.06] hover:text-warm",
                     )}
                   >
                     {item.label}
@@ -120,8 +151,18 @@ export function Header() {
           </ul>
         </nav>
 
-        <div className="flex items-center gap-1.5 justify-self-end">
-          <Button href={to(site.purchaseHref)} onClick={navigate} variant="sunset" className="max-sm:h-10 max-sm:px-4">
+        <div className="flex items-center gap-1 justify-self-end sm:gap-1.5">
+          {checkoutAvailable && (
+            <Link
+              href="/order-status"
+              title="Order status"
+              className="hidden size-11 place-items-center rounded-full text-warm/70 transition-[color,background-color,box-shadow] duration-300 hover:bg-white/[0.07] hover:text-warm hover:shadow-[inset_0_0_0_1px_rgb(255_255_255/0.08)] sm:grid"
+            >
+              <PackageSearch aria-hidden className="size-[1.15rem]" />
+              <span className="sr-only">Order status</span>
+            </Link>
+          )}
+          <Button href={to(site.purchaseHref)} onClick={navigate} variant="sunset" className="h-11 px-5 shadow-[0_8px_24px_-8px_rgb(255_87_154/0.6)] max-sm:h-10 max-sm:px-4">
             <ShoppingBag aria-hidden className="size-4 max-sm:hidden" strokeWidth={2.25} />
             Buy now
           </Button>
@@ -130,9 +171,9 @@ export function Header() {
             onClick={openMenu}
             aria-label="Open menu"
             aria-haspopup="dialog"
-            className="-mr-2 grid size-11 place-items-center rounded-control text-warm transition-colors hover:bg-warm/10 md:hidden"
+            className="grid size-10 place-items-center rounded-full text-warm transition-colors hover:bg-white/[0.08] md:hidden"
           >
-            <Menu aria-hidden className="size-6" />
+            <Menu aria-hidden className="size-5.5" />
           </button>
         </div>
       </div>
@@ -141,19 +182,14 @@ export function Header() {
         ref={dialogRef}
         aria-label="Menu"
         onClose={() => getLenis()?.start()}
-        className="mobile-menu m-0 h-dvh max-h-none w-full max-w-none bg-obsidian p-0 text-warm backdrop:bg-obsidian"
+        className="mobile-menu pointer-events-auto m-0 h-dvh max-h-none w-full max-w-none bg-obsidian p-0 text-warm backdrop:bg-obsidian"
       >
         <div className="relative flex h-full flex-col px-gutter">
-          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_55%_at_85%_100%,rgb(255_155_98/0.28),rgb(255_87_154/0.12)_45%,transparent_75%)]" />
-          <div className="relative flex h-16 items-center justify-between">
-            <span className={wordmark}>{site.name}</span>
-            <button
-              type="button"
-              onClick={() => dialogRef.current?.close()}
-              aria-label="Close menu"
-              className="-mr-2 grid size-11 place-items-center rounded-control hover:bg-warm/10"
-            >
-              <X aria-hidden className="size-6" />
+          <div aria-hidden className="pointer-events-none absolute inset-0 bg-[radial-gradient(90%_55%_at_85%_100%,rgb(255_155_98/0.24),rgb(255_87_154/0.12)_45%,transparent_75%),radial-gradient(70%_40%_at_0%_0%,rgb(178_140_255/0.14),transparent_70%)]" />
+          <div className="relative mt-3 flex h-14 items-center justify-between rounded-full pr-1.5 pl-5 glass-bar bg-[#0c0912]/70">
+            <Wordmark className="text-[1.375rem]" />
+            <button type="button" onClick={() => dialogRef.current?.close()} aria-label="Close menu" className="grid size-10 place-items-center rounded-full hover:bg-white/[0.08]">
+              <X aria-hidden className="size-5.5" />
             </button>
           </div>
 
@@ -164,8 +200,8 @@ export function Header() {
                   <a
                     href={to(item.href)}
                     onClick={navigate}
-                    aria-current={onHome && active === item.href ? "location" : undefined}
-                    className="flex items-center justify-between py-3 font-display text-[clamp(2.75rem,13vw,4.25rem)] leading-none font-extrabold uppercase aria-[current]:text-sunset"
+                    aria-current={current === item.href ? "location" : undefined}
+                    className="flex items-center justify-between py-3 font-display text-[clamp(2.5rem,12vw,4rem)] leading-none font-extrabold uppercase transition-colors aria-[current]:text-sunset"
                   >
                     {item.label}
                   </a>
@@ -174,12 +210,18 @@ export function Header() {
             </ul>
           </nav>
 
-          <div data-menu-item style={{ "--i": site.nav.length } as CSSProperties} className="relative pb-[max(1.75rem,env(safe-area-inset-bottom))]">
+          <div data-menu-item style={{ "--i": site.nav.length } as CSSProperties} className="relative grid gap-3 pb-[max(1.75rem,env(safe-area-inset-bottom))]">
             <Button href={to(site.purchaseHref)} onClick={navigate} variant="sunset" size="lg" className="w-full">
               <ShoppingBag aria-hidden className="size-4.5" strokeWidth={2.25} />
               Buy now
             </Button>
-            <p className="mt-4 text-center text-xs text-warm/55">
+            {checkoutAvailable && (
+              <Link href="/order-status" className="inline-flex h-12 items-center justify-center gap-2 rounded-control border border-warm/12 text-sm font-semibold text-warm/85 hover:bg-white/[0.06]">
+                <PackageSearch aria-hidden className="size-4" />
+                Track your order
+              </Link>
+            )}
+            <p className="mt-1 text-center text-xs text-warm/55">
               {platformNames && <>For {platformNames}. </>}
               {site.shortDisclaimer}
             </p>

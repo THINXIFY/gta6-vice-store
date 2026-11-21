@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { AlertCircle, Check, CheckCircle2, Circle, Clock, ExternalLink, Gamepad2, LifeBuoy, XCircle } from "lucide-react";
 import { useEffect, useState, type FormEvent } from "react";
 import { assets, networks, targetProcessingMinutes } from "@/config/payments";
 import { editions, game, platforms } from "@/config/product";
 import { site } from "@/config/site";
+import { pageHref } from "@/lib/pages";
 import type { PlatformId } from "@/config/types";
 import { formatPrice } from "@/lib/pricing";
 import { networkLabel } from "@/lib/orders/methods";
@@ -220,7 +222,19 @@ function OrderView({ order }: { order: Order }) {
         <div className="flex gap-3 rounded-xl border border-warm/10 px-5 py-4 text-sm text-warm/65">
           <LifeBuoy aria-hidden className="mt-0.5 size-4 shrink-0 text-sunset" />
           <p>
-            Need help? {site.support.email ? <a href={`mailto:${site.support.email}`} className="text-sunset hover:underline">{site.support.email}</a> : "Support contact details will be listed here before payments open."} Include your Payment ID.
+            Need help?{" "}
+            {pageHref("contact") ? (
+              <Link href={pageHref("contact")} className="text-sunset hover:underline">
+                Contact support
+              </Link>
+            ) : site.support.email ? (
+              <a href={`mailto:${site.support.email}`} className="text-sunset hover:underline">
+                {site.support.email}
+              </a>
+            ) : (
+              "Support contact details will be listed here before payments open."
+            )}{" "}
+            and include your Payment ID.
           </p>
         </div>
 

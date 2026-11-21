@@ -26,6 +26,9 @@ async function connect(): Promise<Db> {
   }
   const { PGlite } = await import("@electric-sql/pglite");
   const { migrate } = await import("drizzle-orm/pglite/migrator");
+  // `next build` prerenders in several worker processes; the embedded DB must never be opened
+  // there (callers such as the catalogue fall back to config). Pages read it per request.
+  if (process.env.NEXT_PHASE === "phase-production-build") throw new Error("The embedded database is not opened during next build.");
   const dir = process.env.PGLITE_DIR ?? path.join(process.cwd(), ".data", "pglite");
   if (dir !== "memory://") {
     mkdirSync(dir, { recursive: true });

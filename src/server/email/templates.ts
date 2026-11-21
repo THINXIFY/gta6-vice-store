@@ -6,7 +6,7 @@ import { site } from "@/config/site";
  * Each template returns subject, HTML and a plain-text alternative.
  */
 
-export type EmailKind = "order_created" | "payment_submitted" | "payment_approved" | "payment_rejected" | "info_required" | "game_ready" | "admin_submission" | "test";
+export type EmailKind = "order_created" | "payment_submitted" | "payment_approved" | "payment_rejected" | "info_required" | "game_ready" | "admin_submission" | "support_received" | "admin_support" | "test";
 
 export type EmailOrder = {
   paymentId: string;
@@ -34,6 +34,8 @@ export type EmailData = {
   note?: string | null;
   fulfillmentKind?: "redemption_code" | "access_link";
   linkDays?: number;
+  /** Contact-form message (support emails). */
+  support?: { reference: string; topic: string; paymentId?: string | null; name?: string | null; email: string; message: string; isTest: boolean };
   /** Test mode: who the email was meant for. */
   redirectedFrom?: string;
 };
@@ -62,7 +64,7 @@ function rowsHtml(rows: Row[]) {
 }
 
 function layout(preheader: string, b: Block, data: EmailData, audience: "customer" | "admin") {
-  const testBanner = data.order?.isTest || data.redirectedFrom
+  const testBanner = data.order?.isTest || data.support?.isTest || data.redirectedFrom
     ? `<tr><td style="padding:10px 24px;background:#2a2410;font:600 12px/1.5 ${SANS};color:#ffe680;text-align:center">Test email${data.redirectedFrom ? ` (intended for ${esc(data.redirectedFrom)})` : ""}. No real payment or game is involved.</td></tr>`
     : "";
   const note = b.note
@@ -84,14 +86,13 @@ function layout(preheader: string, b: Block, data: EmailData, audience: "custome
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"><meta name="supported-color-schemes" content="dark">
 <title>${esc(b.heading)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@800&family=Hanken+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
 <style>@media (max-width:620px){.px{padding-left:20px!important;padding-right:20px!important}.h1{font-size:26px!important}}</style>
 </head>
 <body style="margin:0;padding:0;background:${C.bg};-webkit-text-size-adjust:100%">
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg}"><tr><td align="center" style="padding:32px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
-  <tr><td style="padding:0 8px 20px"><span style="font:800 30px/1 ${DISPLAY};letter-spacing:3px;color:${C.warm}">VICE</span>${audience === "admin" ? `<span style="font:600 12px/1 ${SANS};color:${C.muted};padding-left:8px">Admin</span>` : ""}</td></tr>
+  <tr><td style="padding:0 8px 20px"><span style="font:800 30px/1 ${DISPLAY};letter-spacing:2px;color:${C.warm}">${esc(site.wordmark[0])} <span style="color:${C.sunset}">${esc(site.wordmark[1])}</span></span>${audience === "admin" ? `<span style="font:600 12px/1 ${SANS};color:${C.muted};padding-left:8px">Admin</span>` : ""}</td></tr>
   <tr><td style="background:${C.card};border:1px solid ${C.line};border-radius:18px;overflow:hidden">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       <tr><td style="height:4px;line-height:4px;font-size:0;background:${C.vice};background-image:linear-gradient(90deg,${C.vice},${C.sunset},${C.lavender})">&nbsp;</td></tr>
@@ -116,7 +117,7 @@ function layout(preheader: string, b: Block, data: EmailData, audience: "custome
 function textVersion(b: Block, data: EmailData) {
   const strip = (h: string) => h.replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'");
   return [
-    data.order?.isTest || data.redirectedFrom ? `[TEST EMAIL${data.redirectedFrom ? ` intended for ${data.redirectedFrom}` : ""}. No real payment or game is involved.]\n` : "",
+    data.order?.isTest || data.support?.isTest || data.redirectedFrom ? `[TEST EMAIL${data.redirectedFrom ? ` intended for ${data.redirectedFrom}` : ""}. No real payment or game is involved.]\n` : "",
     b.heading.toUpperCase(),
     "",
     strip(b.intro),
@@ -231,9 +232,35 @@ export function renderEmail(kind: EmailKind, data: EmailData): { subject: string
         cta: data.link ? { label: "Review payment", href: data.link } : undefined,
       };
       break;
+    case "support_received": {
+      const m = data.support!;
+      subject = `${m.isTest ? "[Test] " : ""}We received your message (${m.reference})`;
+      preheader = "Thanks for contacting us. We will reply by email.";
+      block = {
+        heading: "We received your message",
+        intro: "Thanks for getting in touch. A member of our team will read your message and reply to this email address. Please keep your reference number.",
+        rows: [["Reference", m.reference, true], ["Topic", m.topic], ["Payment ID", m.paymentId, true]],
+        after: "We will never ask for your wallet private key, recovery phrase or console password.",
+      };
+      break;
+    }
+    case "admin_support": {
+      audience = "admin";
+      const m = data.support!;
+      subject = `${m.isTest ? "[Test] " : ""}Support message ${m.reference}: ${m.topic}`;
+      preheader = m.message.slice(0, 90);
+      block = {
+        heading: "New support message",
+        intro: "A customer sent a message through the contact form.",
+        rows: [["Reference", m.reference, true], ["From", m.name ? `${m.name} <${m.email}>` : m.email], ["Topic", m.topic], ["Payment ID", m.paymentId, true]],
+        note: { title: "Message", text: m.message, tone: "lavender" },
+        cta: data.link ? { label: "Open in Admin", href: data.link } : undefined,
+      };
+      break;
+    }
     case "test":
       audience = "admin";
-      subject = "Test email from VICE admin";
+      subject = `Test email from ${site.name} admin`;
       preheader = "Your email settings work.";
       block = {
         heading: "Your email settings work",

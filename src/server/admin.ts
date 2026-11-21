@@ -612,3 +612,8 @@ export async function testEmail(admin: Admin, to: string, ipHash: string) {
   await audit(actorOf(admin), "email.test", "email", to.toLowerCase(), { status }, ipHash);
   return status;
 }
+
+export async function auditEmailRetry(admin: Admin, emailId: string, status: string, ipHash: string) {
+  owner(admin);
+  await audit(actorOf(admin), "email.retry", "email", emailId, { status }, ipHash);
+}

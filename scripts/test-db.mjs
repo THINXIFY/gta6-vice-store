@@ -31,7 +31,7 @@ test("migrations apply and are idempotent", async () => {
   await migrate(orm, { migrationsFolder });
   await migrate(orm, { migrationsFolder });
   const { rows } = await q(`select count(*)::int as n from information_schema.tables where table_schema = 'public'`);
-  assert.equal(rows[0].n, 15); // + email_messages (GTA-09D)
+  assert.equal(rows[0].n, 16); // + email_messages (GTA-09D), support_messages (GTA-11A)
 });
 
 test("catalogue constraints", async () => {
@@ -98,6 +98,15 @@ test("GTA-09B: screenshots constrained and immutable; submissions carry decimal 
   const dup = await q(mail + " on conflict do nothing returning id", [id, `order_created:${id}`]);
   if (dup.rows.length) throw new Error("duplicate email row inserted");
   await rejects("delete from email_messages where order_id = $1", [id], /append-only/);
+  // GTA-11A: support messages are validated and never deleted.
+  const sup = "insert into support_messages (reference, email, topic, message, is_test, payment_id) values ($1, 'a@b.co', $2, $3, true, $4) returning id";
+  const [{ id: supId }] = (await q(sup, ["SUP-AAAAAA", "payment", "Where is my payment?", null])).rows;
+  await rejects(sup, ["SUP-AAAAAA", "payment", "Duplicate reference", null], /support_messages_reference_key/);
+  await rejects(sup, ["SUP-BBBBBB", "spam", "Unknown topic here", null], /support_messages_topic/);
+  await rejects(sup, ["SUP-CCCCCC", "other", "short", null], /support_messages_lengths/);
+  await rejects(sup, ["SUP-DDDDDD", "order", "Bad payment id here", "VICE-1"], /support_messages_payment_id/);
+  await rejects("update support_messages set status = 'deleted' where id = $1", [supId], /support_messages_status/);
+  await rejects("delete from support_messages where id = $1", [supId], /append-only/);
   await rejects("update orders set release_key_hash = 'not-a-hash' where id = $1", [id], /orders_release_key_sha256/);
   await q("update orders set release_key_hash = $2, release_key_expires_at = now() + interval '30 days' where id = $1", [id, "a".repeat(64)]);
   await rejects(`insert into payment_submissions (order_id, network, txid, txid_normalized, email, claimed_amount) values ($1, 'tron', 'T1', 't1', 'a@b.co', '1e5')`, [id], /payment_submissions_claimed_decimal/);

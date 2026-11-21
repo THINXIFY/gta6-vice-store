@@ -5,7 +5,9 @@ import { redirect } from "next/navigation";
 import * as admin from "@/server/admin";
 import { login, logout, requestIpHash, requireAdmin } from "@/server/auth";
 import { NotFound } from "@/server/orders";
+import { retryEmail, RetryError } from "@/server/email";
 import { rateLimit } from "@/server/security";
+import { setSupportStatus } from "@/server/support";
 
 /**
  * Admin Server Actions. Next.js only accepts them as same-origin POSTs; each one re-checks
@@ -93,6 +95,44 @@ export async function testEmailAction(form: FormData) {
     const status = await admin.testEmail(me, to, ip);
     if (status === "failed") throw new admin.AdminError("The test email could not be sent. The delivery log shows the error.");
     if (status === "skipped") throw new admin.AdminError("The test email was logged but not sent. The delivery log shows why.");
+  });
+}
+
+export async function supportStatusAction(form: FormData) {
+  const me = await requireAdmin();
+  const ip = await requestIpHash();
+  const id = text(form, "id", 40);
+  const status = form.get("status") === "open" ? "open" : "resolved";
+  await run(`/admin/support?view=${status === "resolved" ? "open" : "resolved"}`, status === "resolved" ? "Marked as resolved." : "Reopened.", async () => {
+    try {
+      await setSupportStatus(me, id, status, ip);
+    } catch (e) {
+      throw new admin.AdminError((e as Error).message);
+    }
+  });
+}
+
+/** Owner-only: send a failed email again (rebuilt from current records; audited). */
+export async function retryEmailAction(form: FormData) {
+  const me = await requireAdmin("owner");
+  const ip = await requestIpHash();
+  const id = text(form, "id", 40);
+  const back = text(form, "back", 200);
+  // Return only to an admin path (no open redirect).
+  const path = /^\/admin(\/[A-Za-z0-9/_-]*)?(\?[A-Za-z0-9=&_-]*)?$/.test(back) ? back : "/admin/emails";
+  const limit = await rateLimit(`admin-email-retry:${me.id}`, 20, 10 * 60_000);
+  await run(path, "Email sent.", async () => {
+    if (!limit.ok) throw new admin.AdminError("Too many retries. Try again in a few minutes.");
+    if (!/^[0-9a-f-]{36}$/.test(id)) throw new admin.AdminError("Email not found.");
+    let status: string;
+    try {
+      status = await retryEmail(id);
+    } catch (e) {
+      if (e instanceof RetryError) throw new admin.AdminError(e.message);
+      throw e;
+    }
+    await admin.auditEmailRetry(me, id, status, ip);
+    if (status !== "sent") throw new admin.AdminError(status === "skipped" ? "Not sent: email delivery is not configured. The log shows why." : "The retry failed again. The log shows the error.");
   });
 }
 

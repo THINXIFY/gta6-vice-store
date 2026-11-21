@@ -1,8 +1,9 @@
 "use client";
 
-import { Gamepad2, LayoutDashboard, ListChecks, LogOut, Mail, Settings, Tags, Wallet } from "lucide-react";
+import { Gamepad2, LayoutDashboard, LifeBuoy, ListChecks, LogOut, Mail, Settings, Tags, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Wordmark } from "@/components/ui/Wordmark";
 import { cn } from "@/lib/utils";
 
 const GROUPS = [
@@ -10,7 +11,8 @@ const GROUPS = [
     label: "Operations",
     items: [
       { href: "/admin", label: "Overview", icon: LayoutDashboard, owner: false },
-      { href: "/admin/orders", label: "Orders & Payments", icon: ListChecks, owner: false, badge: true },
+      { href: "/admin/orders", label: "Orders & Payments", icon: ListChecks, owner: false, badge: "review" as const },
+      { href: "/admin/support", label: "Support", icon: LifeBuoy, owner: false, badge: "support" as const },
     ],
   },
   {
@@ -30,7 +32,7 @@ const GROUPS = [
   },
 ];
 
-export function Sidebar({ email, role, reviewCount, logout }: { email: string; role: "owner" | "reviewer"; reviewCount: number; logout: () => Promise<void> }) {
+export function Sidebar({ email, role, reviewCount, supportCount, logout }: { email: string; role: "owner" | "reviewer"; reviewCount: number; supportCount: number; logout: () => Promise<void> }) {
   const path = usePathname();
   return (
     <aside className="relative isolate flex shrink-0 flex-col overflow-hidden border-line bg-panel max-lg:border-b lg:sticky lg:top-0 lg:h-svh lg:w-64 lg:border-r">
@@ -41,7 +43,7 @@ export function Sidebar({ email, role, reviewCount, logout }: { email: string; r
       />
       <div className="flex h-14 items-center px-5 lg:h-16 lg:px-6">
         <Link href="/admin" className="flex items-baseline gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vice">
-          <span className="bg-gradient-to-r from-warm via-[#ffb3cf] to-vice bg-clip-text font-display text-[1.75rem] leading-none font-extrabold tracking-[0.06em] text-transparent">VICE</span>
+          <Wordmark className="text-[1.375rem]" />
           <span className="text-xs font-medium text-warm/50">Admin</span>
         </Link>
       </div>
@@ -69,10 +71,10 @@ export function Sidebar({ email, role, reviewCount, logout }: { email: string; r
                     )}
                     <n.icon aria-hidden className={cn("size-4 transition-colors", active ? "text-vice" : "text-warm/45")} />
                     {n.label}
-                    {"badge" in n && reviewCount > 0 && (
+                    {"badge" in n && (n.badge === "review" ? reviewCount : supportCount) > 0 && (
                       <span className="ml-auto rounded-full bg-sunset/15 px-1.5 py-0.5 text-[0.6875rem] leading-none font-semibold text-sunset tabular-nums">
-                        {reviewCount}
-                        <span className="sr-only"> to review</span>
+                        {n.badge === "review" ? reviewCount : supportCount}
+                        <span className="sr-only">{n.badge === "review" ? " to review" : " open"}</span>
                       </span>
                     )}
                   </Link>

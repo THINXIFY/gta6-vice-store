@@ -41,7 +41,7 @@ test.describe("footer", () => {
     await expect(footer).toContainText(/© \d{4}/);
 
     const nav = footer.getByRole("navigation", { name: "Footer" });
-    for (const label of ["Overview", "Editions", "Explore", "Trailers", "FAQ"]) {
+    for (const label of ["Home", "Editions", "Explore", "Trailers", "FAQ"]) {
       const href = await nav.getByRole("link", { name: label, exact: true }).getAttribute("href");
       expect(href).toMatch(/^#.+/);
       await expect(page.locator(href!)).toHaveCount(1);
