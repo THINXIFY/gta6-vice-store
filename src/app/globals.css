@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "lenis/dist/lenis.css";
+
+/* ───────── Design tokens: VICE — Cinematic Commerce ───────── */
+@theme {
+  /* Palette (fixed by brief) */
+  --color-obsidian: #08080d;
+  --color-midnight: #171020;
+  --color-vice: #ff579a;
+  --color-sunset: #ff9b62;
+  --color-lavender: #b28cff;
+  --color-warm: #fff4eb;
+
+  /* Admin surfaces: violet-tinted steps between obsidian and midnight */
+  --color-admin: #0d0a13;
+  --color-well: #09070e;
+  --color-panel: #141019;
+  --color-panel-2: #1b1523;
+  --color-line: #261f31;
+  --color-line-strong: #362c45;
+
+  /* Typography — families injected by next/font in layout.tsx */
+  --font-display: var(--font-big-shoulders), "Arial Narrow", sans-serif;
+  --font-sans: var(--font-hanken), ui-sans-serif, system-ui, sans-serif;
+
+  /* Fluid type scale (min @ 360px → max @ 1600px) */
+  --text-display-xl: clamp(4rem, 1.9rem + 9.3vw, 11rem);
+  --text-display-xl--line-height: 0.86;
+  --text-display-xl--letter-spacing: -0.01em;
+  --text-display-lg: clamp(3rem, 1.8rem + 5.4vw, 7rem);
+  --text-display-lg--line-height: 0.9;
+  --text-display-md: clamp(2.25rem, 1.6rem + 2.9vw, 4.5rem);
+  --text-display-md--line-height: 0.95;
+  --text-title: clamp(1.375rem, 1.2rem + 0.8vw, 2rem);
+  --text-title--line-height: 1.15;
+  --text-lead: clamp(1.125rem, 1.05rem + 0.35vw, 1.375rem);
+  --text-lead--line-height: 1.5;
+
+  /* Layout rhythm: py-section, px-gutter, gap-gutter … */
+  --spacing-gutter: clamp(1rem, 0.4rem + 2.6vw, 3rem);
+  --spacing-section: clamp(5rem, 3rem + 6.5vw, 9.5rem);
+  --container-content: 88rem;
+  --container-measure: 40rem;
+
+  /* Extra-wide breakpoint (Tailwind defaults: sm 40, md 48, lg 64, xl 80, 2xl 96rem) */
+  --breakpoint-3xl: 120rem;
+
+  /* Radii: small for controls, larger only for media */
+  --radius-control: 999px;
+  --radius-media: 1.25rem;
+
+  /* Motion */
+  --ease-cinematic: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-swift: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Restrained gradients — use for large surfaces only, never borders */
+@utility bg-dusk {
+  background-image: linear-gradient(180deg, var(--color-obsidian) 0%, var(--color-midnight) 100%);
+}
+@utility bg-sunset-glow {
+  background-image: radial-gradient(120% 80% at 70% 100%, color-mix(in oklab, var(--color-sunset) 45%, transparent) 0%, color-mix(in oklab, var(--color-vice) 25%, transparent) 35%, transparent 70%);
+}
+@utility text-sunset {
+  background-image: linear-gradient(100deg, var(--color-sunset), var(--color-vice));
+  background-clip: text;
+  color: transparent;
+}
+
+/* Film grain: a static, tiled noise texture that breaks up gradient banding. */
+@utility grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: 0.09;
+  mix-blend-mode: overlay;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    background-color: var(--color-obsidian);
+    color: var(--color-warm);
+    font-family: var(--font-sans);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: clip;
+  }
+  ::selection {
+    background-color: var(--color-vice);
+    color: var(--color-obsidian);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-lavender);
+    outline-offset: 3px;
+    border-radius: 4px;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+/* Hero intro: hidden before hydration only when motion is allowed (class set by inline
+   script). Failsafe reveals content after 3s if JS never runs. */
+.motion-ok:not(.hero-ready) [data-hero-intro] {
+  opacity: 0;
+  animation: reveal-failsafe 0.01s 3s forwards;
+}
+@keyframes reveal-failsafe {
+  to { opacity: 1; }
+}
+
+/* Mobile menu (native <dialog>) */
+.mobile-menu[open] {
+  animation: menu-in 0.5s var(--ease-cinematic);
+}
+@keyframes menu-in {
+  from { opacity: 0; }
+}
+.mobile-menu[open] [data-menu-item] {
+  animation: menu-item-in 0.7s var(--ease-cinematic) both;
+  animation-delay: calc(0.08s + var(--i, 0) * 0.05s);
+}
+@keyframes menu-item-in {
+  from { opacity: 0; transform: translateY(18px); }
+}
+
+/* Reduced motion: hard stop for CSS transitions; GSAP/Lenis are disabled in JS. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Selection feedback: replays when the keyed element remounts. */
+.swap-in {
+  animation: swap-in 0.6s var(--ease-cinematic) both;
+}
+@keyframes swap-in {
+  from { opacity: 0; transform: translateY(8px); }
+}
+
+/* Trailer "now playing" bars */
+.eq span {
+  width: 3px;
+  border-radius: 1px;
+  background: currentColor;
+  animation: eq 0.9s ease-in-out infinite alternate;
+}
+.eq span:nth-child(1) { height: 60%; }
+.eq span:nth-child(2) { height: 100%; animation-delay: -0.3s; }
+.eq span:nth-child(3) { height: 40%; animation-delay: -0.6s; }
+@keyframes eq {
+  to { transform: scaleY(0.35); }
+}
+.eq span { transform-origin: bottom; }
+
+/* Image viewer (native <dialog>) */
+.lightbox[open] {
+  animation: menu-in 0.4s var(--ease-cinematic);
+}
+
+/* FAQ answers ease in when opened */
+.faq[open] .faq-answer {
+  animation: swap-in 0.45s var(--ease-cinematic) both;
+}
+
+/* "LEONIDA" sized to fill the content width; the scene overlaps its lower third. */
+.world-title {
+  /* LEONIDA measures 2.79em wide in Big Shoulders 800 at -0.02em tracking. */
+  --world-size: calc((min(100vw, 88rem) - 2 * var(--spacing-gutter)) * 0.355);
+  font-size: var(--world-size);
+}
+.world-figure {
+  margin-top: calc((min(100vw, 88rem) - 2 * var(--spacing-gutter)) * 0.355 * -0.27);
+}
+@media (max-width: 39.99rem) {
+  .world-figure {
+    margin-top: calc((100vw - 2 * var(--spacing-gutter)) * 0.355 * -0.14);
+  }
+}
+
+/* Footer wordmark: fills the width and fades into the page's last pixels. */
+.footer-mark {
+  font-size: calc(min(100vw, 88rem) * 0.4);
+  margin-bottom: -0.1em;
+  background-image: linear-gradient(180deg, color-mix(in oklab, var(--color-warm) 18%, transparent) 0%, color-mix(in oklab, var(--color-vice) 20%, transparent) 42%, color-mix(in oklab, var(--color-lavender) 12%, transparent) 70%, transparent 94%);
+  background-clip: text;
+  color: transparent;
+}
+
+/* Seamless section transitions: bands fade from/to obsidian instead of hard edges. */
+@utility bg-band {
+  background-image: linear-gradient(180deg, var(--color-obsidian) 0%, var(--color-midnight) 22%, var(--color-midnight) 78%, var(--color-obsidian) 100%);
+}
+@utility bg-fade-out {
+  background-image: linear-gradient(180deg, var(--color-midnight) 0%, var(--color-obsidian) 100%);
+}
+
+/* Hero CTA: a slow light sweep every few seconds (static under reduced motion). */
+.cta-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 32%, rgb(255 255 255 / 0.42) 50%, transparent 68%);
+  transform: translateX(-130%);
+  animation: cta-sheen 6s var(--ease-swift) 2.6s infinite;
+  pointer-events: none;
+}
+@keyframes cta-sheen {
+  0%, 72% { transform: translateX(-130%); }
+  100% { transform: translateX(130%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta-sheen::after { display: none; }
+}

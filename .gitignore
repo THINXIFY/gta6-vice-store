@@ -1,0 +1,34 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+.env*
+!.env.example
+playwright-report/
+test-results/
+.DS_Store
+.claude/settings.local.json
+
+# Unlicensed supplied media: never commit or deploy (see scripts/sync-preview-media.mjs)
+media-pending/
+public/preview-media/
+
+# Local embedded database (PGlite)
+.data/
+
+# Design-review screenshots include unlicensed supplied media: keep local
+review/
+
+# Secrets and keys (never commit)
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+
+# Logs and platform state
+*.log
+npm-debug.log*
+.vercel/
+.turbo/

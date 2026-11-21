@@ -1,0 +1,234 @@
+import type { EditionArtItem, GalleryItem, MediaItem, Trailer } from "./types";
+
+/**
+ * Media registry.
+ * Rights: only "original" / "licensed" assets render on the live site. Everything in
+ * /media-pending was supplied from Rockstar's own store and channels and is "pending"
+ * until written permission from Rockstar Games / Take-Two is on file — flip `license`
+ * to "licensed" per asset once it is. Without a usable asset, original drawn art is used.
+ * `sourceUrl` feeds /credits. Attribution is not permission.
+ */
+
+const A = "/preview-media/";
+const STORE = "https://store.rockstargames.com/game/buy-gta-vi";
+const SITE = "https://www.rockstargames.com/VI";
+const rockstar = { license: "pending", credit: "Rockstar Games" } as const;
+
+/** Art-directed hero: separate crops so each composition is framed for its screen. */
+export type HeroArt = {
+  /** Landscape crop, used from the `lg` breakpoint (≥1024px). Recommended 2880×1620. */
+  desktop: MediaItem;
+  /** Portrait/4:5 crop, used below `lg`. Recommended 1200×1500. Keep the subject in the top 60%. */
+  mobile: MediaItem;
+  /** CSS object-position per crop, so the subject stays clear of the copy column. */
+  focus: { desktop: string; mobile: string };
+  /** True if the licensed art already contains the "VI" logo, which hides the drawn numeral. */
+  includesLogo: boolean;
+};
+
+const viceCitySign: MediaItem = {
+  id: "vice-city-01",
+  kind: "image",
+  alt: "The Vice City sign at dusk as a jet passes low overhead",
+  src: `${A}imgi_132_01_-_Vice_City_01.jpg`,
+  width: 3840,
+  height: 2160,
+  sourceUrl: SITE,
+  ...rockstar,
+};
+
+/** Night-time hero key frame (supplied by the client; origin and rights unconfirmed). */
+const heroNight: MediaItem = {
+  id: "hero-night",
+  kind: "image",
+  alt: "Jason and Lucia on a silver sports car on a neon-lit Vice City waterfront at dusk, the Grand Theft Auto VI logo glowing above",
+  src: A + "gta-hero-home-new.png",
+  width: 1672,
+  height: 941,
+  license: "pending",
+  credit: "Supplied artwork (source unconfirmed)",
+};
+
+export const heroArt: HeroArt = {
+  desktop: heroNight,
+  mobile: heroNight,
+  // Keep the characters, car and logo (right side) in frame on every crop.
+  focus: { desktop: "68% 50%", mobile: "95% 52%" },
+  includesLogo: true,
+};
+
+/**
+ * Edition artwork for the purchase panel and comparison (any ratio; panels adopt it).
+ * Lookup order: edition + platform, then edition only.
+ */
+export const editionArt: EditionArtItem[] = [
+  {
+    edition: "standard",
+    image: {
+      id: "standard-key-art",
+      kind: "image",
+      alt: "Grand Theft Auto VI Standard Edition key art over a palm-lined Vice City street",
+      src: `${A}imgi_141_GTAVI_PreOrderWebstore_CompareEditionsThumbnail_Standard_1280x720_R01.jpg`,
+      width: 1280,
+      height: 720,
+      sourceUrl: STORE,
+      ...rockstar,
+    },
+  },
+  {
+    edition: "ultimate",
+    image: {
+      id: "ultimate-key-art",
+      kind: "image",
+      alt: "Grand Theft Auto VI Ultimate Edition key art against a sunset",
+      src: `${A}imgi_140_UltimateEdition_07_en_us_R04_Deliv.jpg`,
+      width: 1280,
+      height: 720,
+      sourceUrl: STORE,
+      ...rockstar,
+    },
+  },
+];
+
+/** World showcase (Explore). `caption` names only what is visible or officially named. */
+export const showcase: (MediaItem & { caption: string })[] = [
+  {
+    id: "vice-city-09",
+    kind: "image",
+    alt: "A Vice City street under a mural-covered overpass, with motorbikes and a classic car",
+    caption: "Vice City streets",
+    src: `${A}imgi_154_09_-_Vice_City_09.jpg`,
+    width: 3840,
+    height: 2160,
+    sourceUrl: SITE,
+    ...rockstar,
+  },
+  {
+    id: "boobie-ike-02",
+    kind: "image",
+    alt: "Boobie Ike outside the Jack of Hearts club at night, phone in hand",
+    caption: "Boobie Ike",
+    src: `${A}imgi_136_05_-_Boobie_Ike_02.jpg`,
+    width: 3840,
+    height: 2160,
+    sourceUrl: SITE,
+    ...rockstar,
+  },
+];
+
+/**
+ * Character key art (official, 1280×720; the Launch Trailer's poster). The left 742px hold
+ * Jason and Lucia with no logo; each character gets a vertical slice, in source pixels.
+ */
+export const characterArt = {
+  image: {
+    id: "jason-lucia-key-art",
+    kind: "image",
+    alt: "Jason Duval and Lucia Caminos at sunset, Lucia sitting on the hood of a red car",
+    src: `${A}imgi_10_maxresdefault.webp`,
+    width: 1280,
+    height: 720,
+    sourceUrl: "https://www.youtube.com/watch?v=rz1B4B2yBZY",
+    ...rockstar,
+  } satisfies MediaItem,
+  slices: { jason: [0, 397], lucia: [397, 742] } as Record<"jason" | "lucia", [number, number]>,
+};
+
+/** Portrait key art: the full cast collage. Gallery's tall artwork panel. */
+const castKeyArt: MediaItem = {
+  id: "key-art-portrait",
+  kind: "image",
+  alt: "Grand Theft Auto VI key art: a collage of Jason, Lucia and other Leonida characters around the game logo",
+  src: `${A}imgi_123_GTAVI_PreOrderWebstore_GamesGrid_FOB_1212x1497_R01.jpg`,
+  width: 1212,
+  height: 1497,
+  sourceUrl: STORE,
+  ...rockstar,
+};
+
+/** Palm-lined street in duotone violet: backdrop for the closing call to action. */
+export const closingBackdrop: MediaItem = {
+  id: "palm-street-backdrop",
+  kind: "image",
+  alt: "",
+  src: `${A}imgi_122_GTAVI_PreOrderWebstore_HeroBackground_3840x1646_R03.jpg`,
+  width: 3840,
+  height: 1646,
+  sourceUrl: STORE,
+  ...rockstar,
+};
+
+/** Code-in-box packshot: illustrates the FAQ answer explaining the format (not a product we list). */
+export const codeInBoxArt: MediaItem = {
+  id: "code-in-box",
+  kind: "image",
+  alt: "Rockstar's Grand Theft Auto VI code-in-box packaging for PlayStation 5",
+  src: `${A}imgi_22_GTAVI_PreOrderWebstore_CodeInABox_Flat_NR_SONY_300x374_R04.jpg`,
+  width: 300,
+  height: 374,
+  sourceUrl: STORE,
+  ...rockstar,
+};
+
+/** Link-preview image (Open Graph / social cards), used only when usable. */
+export const shareImage: MediaItem = {
+  id: "share-image",
+  kind: "image",
+  alt: "Grand Theft Auto VI key art",
+  src: `${A}imgi_152_GTAVI_PreOrderWebstore_MetadataImage_1200x630_R01.jpg`,
+  width: 1200,
+  height: 630,
+  sourceUrl: STORE,
+  ...rockstar,
+};
+
+/**
+ * Official trailers, played through YouTube's privacy-enhanced embedded player (click to
+ * load, nothing rehosted). Checked 2026-11-20 against YouTube watch metadata: channel
+ * "Rockstar Games", playableInEmbed=true, oEmbed 200. Only `embeddable` trailers render.
+ * `trailerEmbeds` is the business switch: set false if embedding is not approved for you.
+ */
+export const trailerEmbeds = true;
+const yt = { embeddable: true, source: "youtube.com/@RockstarGames" } as const;
+export const trailers: Trailer[] = [
+  { youtubeId: "rz1B4B2yBZY", title: "Launch Trailer", durationSeconds: 90, published: "2026-10-15", ...yt },
+  { youtubeId: "_yl5ELcmugI", title: "Out Now", durationSeconds: 30, published: "2026-11-10", ...yt },
+  { youtubeId: "VQRLujxTm3c", title: "Trailer 2", durationSeconds: 167, published: "2025-05-06", ...yt },
+  { youtubeId: "QdBZY2fkU-0", title: "Trailer 1", durationSeconds: 90, published: "2023-12-04", ...yt },
+];
+
+/**
+ * Gallery ("A closer look"): the three official 4K screenshots as close-up details, plus
+ * the portrait key art. The viewer opens each full frame.
+ */
+export const gallery: GalleryItem[] = [
+  { ...viceCitySign, caption: "The Vice City sign", detail: { focus: "54% 22%", zoom: 1.9 } },
+  { ...showcase[0]!, caption: "Murals under the overpass", detail: { focus: "64% 34%", zoom: 2.4 } },
+  { ...showcase[1]!, caption: "The Jack of Hearts", detail: { focus: "78% 4%", zoom: 1.8 } },
+  { ...castKeyArt, caption: "Official key art", detail: { focus: "50% 45%", zoom: 1.35 } },
+];
+
+/** Every supplied asset in use, with where it appears. Drives /credits. */
+export const mediaCredits: { item: MediaItem; title: string; usedIn: string }[] = [
+  { item: heroNight, title: "Hero key frame (night waterfront)", usedIn: "Hero" },
+  { item: viceCitySign, title: "Vice City sign at dusk", usedIn: "Gallery" },
+  { item: showcase[0]!, title: "Vice City streets", usedIn: "Life in Leonida, gallery" },
+  { item: showcase[1]!, title: "Boobie Ike at the Jack of Hearts", usedIn: "Life in Leonida, gallery" },
+  { item: characterArt.image, title: "Jason and Lucia key art", usedIn: "Two lives. One story." },
+  { item: editionArt[1]!.image, title: "Ultimate Edition artwork", usedIn: "Purchase panel, edition comparison, purchase bar" },
+  { item: editionArt[0]!.image, title: "Standard Edition artwork", usedIn: "Purchase panel, edition comparison, purchase bar" },
+  { item: castKeyArt, title: "Portrait key art", usedIn: "Gallery" },
+  { item: closingBackdrop, title: "Palm-lined street backdrop", usedIn: "Closing call to action" },
+  { item: codeInBoxArt, title: "Code-in-box packaging", usedIn: "FAQ" },
+  { item: shareImage, title: "Share image", usedIn: "Link previews" },
+];
+
+/*
+ * Supplied but deliberately unused:
+ * - imgi_1_RockstarLogoResized.png: Rockstar logo; would imply affiliation.
+ * - imgi_150_Group_120__3_.jpg: Red Dead Redemption art, not GTA VI.
+ * - imgi_129/131_maxresdefault.webp: YouTube posters for Trailer 2 / Trailer 1, already shown
+ *   by the trailer player (from YouTube); imgi_130 duplicates imgi_10.
+ * - imgi_63 Ultimate Edition PS5 packshot: carries PlayStation marks, no Xbox counterpart,
+ *   and would suggest a boxed product we do not list.
+ */

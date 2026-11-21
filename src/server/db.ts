@@ -1,0 +1,47 @@
+import "server-only";
+import { mkdirSync } from "node:fs";
+import path from "node:path";
+import type { PgDatabase, PgQueryResultHKT } from "drizzle-orm/pg-core";
+import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
+import { drizzle as drizzlePostgres } from "drizzle-orm/postgres-js";
+import * as schema from "@/db/schema";
+import { acquirePgliteLock } from "../../scripts/pglite-lock.mjs";
+import { seed } from "./seed";
+
+/** Driver-agnostic Postgres database type (postgres.js in production, PGlite locally). */
+export type Db = PgDatabase<PgQueryResultHKT, typeof schema>;
+
+const g = globalThis as typeof globalThis & { __viceDb?: Promise<Db> };
+
+/**
+ * DATABASE_URL set → PostgreSQL via postgres.js (migrations applied by `npm run db:migrate`).
+ * Not set → embedded PGlite at PGLITE_DIR (default .data/pglite) for local development and
+ * tests; migrations and seed data are applied automatically on first use.
+ */
+async function connect(): Promise<Db> {
+  const url = process.env.DATABASE_URL;
+  if (url) {
+    const { default: postgres } = await import("postgres");
+    return drizzlePostgres(postgres(url, { max: 10, prepare: false }), { schema }) as unknown as Db;
+  }
+  const { PGlite } = await import("@electric-sql/pglite");
+  const { migrate } = await import("drizzle-orm/pglite/migrator");
+  const dir = process.env.PGLITE_DIR ?? path.join(process.cwd(), ".data", "pglite");
+  if (dir !== "memory://") {
+    mkdirSync(dir, { recursive: true });
+    acquirePgliteLock(dir); // one process per database folder (PGlite is not multi-process safe)
+  }
+  const client = await PGlite.create(dir === "memory://" ? undefined : dir);
+  const db = drizzlePglite(client, { schema });
+  await migrate(db, { migrationsFolder: path.join(process.cwd(), "drizzle") });
+  await seed(db);
+  return db as unknown as Db;
+}
+
+export function getDb(): Promise<Db> {
+  g.__viceDb ??= connect().catch((err) => {
+    g.__viceDb = undefined;
+    throw err;
+  });
+  return g.__viceDb;
+}
