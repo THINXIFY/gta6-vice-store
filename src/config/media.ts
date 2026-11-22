@@ -24,6 +24,13 @@ export type HeroArt = {
   focus: { desktop: string; mobile: string };
   /** True if the licensed art already contains the "VI" logo, which hides the drawn numeral. */
   includesLogo: boolean;
+  /**
+   * Optional second light of the SAME frame (same framing and size). Scrolling crossfades the hero
+   * from the main art into it, e.g. night into morning. Omit for a single image.
+   */
+  scrollTo?: MediaItem;
+  /** Where the sun is in the scrollTo image (source pixels): the sunrise spreads from here. */
+  sun?: { x: number; y: number };
 };
 
 const viceCitySign: MediaItem = {
@@ -49,9 +56,23 @@ const heroNight: MediaItem = {
   credit: "Supplied artwork (source unconfirmed)",
 };
 
+/** The same beachfront at sunrise (identical framing): scrolling turns night into morning. */
+const heroMorning: MediaItem = {
+  id: "hero-morning",
+  kind: "image",
+  alt: "",
+  src: A + "gta-hero-home-new-morning.png",
+  width: 1672,
+  height: 941,
+  license: "pending",
+  credit: "Supplied artwork (source unconfirmed)",
+};
+
 export const heroArt: HeroArt = {
   desktop: heroNight,
   mobile: heroNight,
+  scrollTo: heroMorning,
+  sun: { x: 1598, y: 508 },
   // Desktop: the full boulevard with the logo on the right. Phones: the logo and the road.
   focus: { desktop: "62% 50%", mobile: "88% 50%" },
   includesLogo: true,
@@ -249,6 +270,7 @@ export const gallery: GalleryItem[] = [
 /** Every supplied asset in use, with where it appears. Drives /credits. */
 export const mediaCredits: { item: MediaItem; title: string; usedIn: string }[] = [
   { item: heroNight, title: "Hero key frame (Vice City beachfront at night)", usedIn: "Hero" },
+  { item: heroMorning, title: "Hero key frame at sunrise", usedIn: "Hero (scroll)" },
   { item: viceCitySign, title: "Vice City sign at dusk", usedIn: "Gallery" },
   { item: showcase[0]!, title: "Vice City at sunset (aerial view)", usedIn: "Explore, gallery" },
   { item: exploreHelicopter, title: "Helicopter animation", usedIn: "Explore" },

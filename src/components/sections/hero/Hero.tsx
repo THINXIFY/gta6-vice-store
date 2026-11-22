@@ -1,10 +1,10 @@
-import { ArrowRight, Play } from "lucide-react";
+import { ArrowRight, Moon, Play, Sun, Sunrise } from "lucide-react";
 import Link from "next/link";
 import { Container } from "@/components/ui/Layout";
 import { getCopy } from "@/server/content";
 import { formatPrice } from "@/lib/pricing";
 import { cn } from "@/lib/utils";
-import { HeroArt, hasLicensedArt } from "./HeroArt";
+import { HeroArt, hasLicensedArt, hasSunrise } from "./HeroArt";
 import { HeroMotion } from "./HeroMotion";
 import { HeroParticles } from "./HeroParticles";
 
@@ -33,10 +33,36 @@ export async function Hero({ from: offer, currency, showTrailer = true }: { from
         <div className="relative mt-14 h-[58svh] min-h-[23rem] overflow-hidden sm:mt-16 sm:h-[62svh] lg:absolute lg:inset-0 lg:mt-0 lg:h-auto">
           {/* Scroll camera push (desktop pin) on its own wrapper, apart from the intro and ambient zoom. */}
           <div data-hero-dolly className="absolute inset-0 origin-[50%_60%]">
-            <HeroArt />
+            {/* Speed-reactive camera: a little extra push while scrolling fast (HeroMotion), on its own wrapper. */}
+            <div data-hero-kick className="absolute inset-0 origin-[50%_55%] will-change-transform">
+              <HeroArt />
+            </div>
           </div>
           {/* Day to night: a tint that deepens as you scroll (opacity only). */}
           <div data-hero-night aria-hidden className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,rgb(32_18_70/0.62)_0%,rgb(20_12_44/0.42)_45%,color-mix(in_oklab,var(--color-obsidian)_70%,transparent)_100%)] opacity-0" />
+          {/* In-game clock: runs from 11:58 PM to 6:30 AM as the sunrise plays (HeroMotion sets the text). */}
+          {hasSunrise && (
+            <div
+              data-hero-clock
+              data-phase="night"
+              aria-hidden
+              className="group pointer-events-none absolute top-20 right-4 z-10 flex items-center gap-3 rounded-xl bg-obsidian/60 px-3.5 py-2.5 opacity-0 ring-1 ring-warm/10 sm:top-24 sm:right-6 lg:top-auto lg:right-10 lg:bottom-24"
+            >
+              <span className="relative grid size-8 place-items-center">
+                <Moon className="absolute size-5 text-lavender opacity-0 transition-opacity duration-500 group-data-[phase=night]:opacity-100" />
+                <Sunrise className="absolute size-5 text-sunset opacity-0 transition-opacity duration-500 group-data-[phase=dawn]:opacity-100" />
+                <Sun className="absolute size-5 text-[#ffd27a] opacity-0 transition-opacity duration-500 group-data-[phase=morning]:opacity-100" />
+              </span>
+              <span className="grid leading-none">
+                <span data-hero-clock-time className="font-display text-2xl font-extrabold tracking-wide tabular-nums">
+                  11:58 PM
+                </span>
+                <span data-hero-clock-label className="mt-1 text-xs font-semibold text-warm/70">
+                  Night
+                </span>
+              </span>
+            </div>
+          )}
           {/* Pointer spotlight (desktop, fine pointer): a soft light moved by transform only. */}
           <div data-hero-spot aria-hidden className="pointer-events-none absolute top-0 left-0 hidden size-[46rem] rounded-full bg-[radial-gradient(circle,rgb(255_228_242/0.16)_0%,rgb(255_170_210/0.07)_32%,transparent_66%)] opacity-0 will-change-transform lg:block" />
           <div data-depth={0.55} aria-hidden className="pointer-events-none absolute inset-0">
@@ -47,8 +73,9 @@ export async function Hero({ from: offer, currency, showTrailer = true }: { from
             <>
               {/* Header legibility, top edge only */}
               <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-linear-to-b from-obsidian/60 to-transparent" />
-              {/* Left-to-right shade (desktop): dark behind the copy, fully clear by the logo on the right. */}
-              <div aria-hidden className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,color-mix(in_oklab,var(--color-obsidian)_94%,transparent)_0%,color-mix(in_oklab,var(--color-obsidian)_82%,transparent)_22%,color-mix(in_oklab,var(--color-obsidian)_50%,transparent)_42%,color-mix(in_oklab,var(--color-obsidian)_14%,transparent)_60%,transparent_74%)] lg:block" />
+              {/* Left-to-right shade (desktop): dark behind the copy, fully clear by the logo on the right.
+                  Eases off as the copy scrolls away, so the morning frame is seen in full (HeroMotion). */}
+              <div data-hero-shade aria-hidden className="pointer-events-none absolute inset-0 hidden bg-[linear-gradient(90deg,color-mix(in_oklab,var(--color-obsidian)_94%,transparent)_0%,color-mix(in_oklab,var(--color-obsidian)_82%,transparent)_22%,color-mix(in_oklab,var(--color-obsidian)_50%,transparent)_42%,color-mix(in_oklab,var(--color-obsidian)_14%,transparent)_60%,transparent_74%)] lg:block" />
               {/* Seamless hand-off into the next section */}
               <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-[45%] bg-linear-to-b from-transparent via-obsidian/55 to-obsidian lg:h-[34%] lg:via-obsidian/35" />
             </>
