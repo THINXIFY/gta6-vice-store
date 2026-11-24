@@ -26,15 +26,17 @@ export const brand = {
   /** Footer and default meta description. Keep factual. */
   description: "A store for Grand Theft Auto VI on PlayStation 5 and Xbox Series X|S. Compare editions, choose your platform and see Leonida before you buy.",
   locale: "en-US",
+  /** Google Search Console HTML-tag verification token (GOOGLE_SITE_VERIFICATION overrides it). */
+  googleSiteVerification: "w3T6pW8-HnXppFB2Rkg6eMi3nq1w9U2JuQtSiXaPqOs",
 
   /** The business behind the store. Empty fields stay hidden (and gate Organization structured data). */
   seller: {
     legalName: "", // e.g. "Example Trading Ltd"
-    supportEmail: "",
+    supportEmail: "gta@vicestoregaming.com",
     country: "",
   },
   /** Customer support destinations. Empty = not shown on the live site (never a dead link). */
-  support: { url: "", email: "" },
+  support: { url: "", email: "gta@vicestoregaming.com" },
 
   colors: {
     /** Page background (darkest). */

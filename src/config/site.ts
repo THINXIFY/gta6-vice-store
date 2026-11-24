@@ -27,12 +27,12 @@ export const site = {
    * links are hidden. Publish only after the seller details and policy terms are confirmed.
    */
   pages: {
-    about: { href: "/about", label: "About us", published: false },
-    contact: { href: "/contact", label: "Contact & support", published: false },
-    terms: { href: "/terms", label: "Terms & Conditions", published: false },
-    privacy: { href: "/privacy", label: "Privacy Policy", published: false },
-    refunds: { href: "/refund-policy", label: "Refund Policy", published: false },
-    cookies: { href: "/cookies", label: "Cookie Policy", published: false },
+    about: { href: "/about", label: "About us", published: true },
+    contact: { href: "/contact", label: "Contact & support", published: true },
+    terms: { href: "/terms", label: "Terms & Conditions", published: true },
+    privacy: { href: "/privacy", label: "Privacy Policy", published: true },
+    refunds: { href: "/refund-policy", label: "Refund & Cancellation Policy", published: true },
+    cookies: { href: "/cookies", label: "Cookie Policy", published: true },
   },
 } as const satisfies { pages: Record<string, { href: string; label: string; published: boolean }> } & Record<string, unknown>;
 

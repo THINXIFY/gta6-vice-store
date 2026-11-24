@@ -66,7 +66,8 @@ export async function emailIdentity() {
     name,
     address,
     from: address ? `"${name}" <${address}>` : "",
-    replyTo: saved.replyTo || cfg.replyTo || undefined,
+    // The store's support address answers customer replies unless Admin → Emails sets another.
+    replyTo: saved.replyTo || cfg.replyTo || site.support.email || undefined,
     adminNotify: saved.adminNotify.length ? saved.adminNotify : cfg.adminNotify,
   };
 }
@@ -206,6 +207,8 @@ async function supportData(id: string): Promise<EmailData["support"] | null> {
 async function adminRecipients() {
   const { adminNotify } = await emailIdentity();
   if (adminNotify.length) return adminNotify;
+  // Then the store's support inbox, then the owner accounts.
+  if (site.support.email) return [site.support.email];
   const db = await getDb();
   return (await db.select({ email: s.adminUsers.email }).from(s.adminUsers).where(and(eq(s.adminUsers.role, "owner"), eq(s.adminUsers.active, true)))).map((a) => a.email);
 }

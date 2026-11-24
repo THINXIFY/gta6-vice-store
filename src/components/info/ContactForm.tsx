@@ -18,7 +18,7 @@ const field =
 const labelCls = "grid gap-2 text-sm font-medium text-warm/80";
 
 /** Contact form → POST /api/support. Works with keyboard and screen readers; errors are announced. */
-export function ContactForm({ preview }: { preview: boolean }) {
+export function ContactForm() {
   const [state, setState] = useState<{ status: "idle" | "sending" | "sent" | "error"; message?: string; reference?: string }>({ status: "idle" });
   const privacy = usePageHref()("privacy");
 
@@ -50,7 +50,6 @@ export function ContactForm({ preview }: { preview: boolean }) {
 
   return (
     <form onSubmit={submit} noValidate={false} className="grid gap-5 rounded-media border border-warm/10 bg-midnight/60 p-6 sm:p-8">
-      {preview && <p className="rounded-lg bg-warning/[0.08] px-3 py-2 text-xs text-warning-soft">Preview: messages are saved as test messages.</p>}
       <div className="grid gap-5 sm:grid-cols-2">
         <label className={labelCls}>
           Your name <span className="text-xs font-normal text-warm/45">Optional</span>

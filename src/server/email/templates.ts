@@ -83,7 +83,9 @@ function layout(preheader: string, b: Block, data: EmailData, audience: "custome
     : "";
   const footer =
     audience === "customer"
-      ? `You are receiving this email because an order was placed at ${esc(site.name)} with this address.`
+      ? `You are receiving this email because an order was placed at ${esc(site.name)} with this address.${
+          site.support.email ? `<br>Questions? <a href="mailto:${esc(site.support.email)}" style="color:${C.faint}">${esc(site.support.email)}</a>` : ""
+        }`
       : `Sent to ${esc(site.name)} administrators. Verify every payment on the blockchain before approving.`;
 
   return `<!doctype html>
@@ -132,7 +134,7 @@ function textVersion(b: Block, data: EmailData) {
     b.rows?.length ? "\n" + b.rows.filter(([, v]) => v).map(([k, v]) => `${k}: ${v}`).join("\n") : "",
     b.cta ? `\n${b.cta.label}: ${b.cta.href}` : "",
     b.after ? `\n${strip(b.after)}` : "",
-    `\n--\n${site.name}`,
+    `\n--\n${site.name}${site.support.email ? `\n${site.support.email}` : ""}`,
   ].join("\n");
 }
 

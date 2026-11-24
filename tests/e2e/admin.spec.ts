@@ -319,11 +319,11 @@ test("content: wording, FAQ and pages are managed in admin", async () => {
   await expect(admin.getByRole("status")).toContainText("Question removed");
   await expect(main.locator("[data-faq]", { hasText: question })).toHaveCount(0);
 
-  // Pages: a page with "To confirm" items cannot be published; saving unchanged text keeps every section.
+  // Pages: the published Terms page has nothing left to confirm; saving unchanged text keeps every section.
   await admin.goto("/admin/content?tab=pages&at=terms");
   const terms = main.locator("#page-terms");
-  await expect(terms).toContainText("to confirm");
-  await expect(terms.getByRole("button", { name: "Publish page" })).toBeDisabled();
+  await expect(terms).not.toContainText("to confirm");
+  await expect(terms.getByRole("button", { name: "Unpublish" })).toBeEnabled();
   await shop.goto("/terms");
   const sectionsBefore = await shop.locator("main section[id]").count();
   const textBefore = await shop.locator("main article, main").first().innerText();
@@ -344,9 +344,9 @@ test("launch checklist and health check report this deployment honestly", async 
   await admin.goto("/admin/launch");
   const main = admin.locator("main");
   await expect(main.getByRole("heading", { name: "Launch checklist", level: 1 })).toBeVisible();
-  // The test build is a local preview: checkout closed, preview on, embedded database, no domain.
-  for (const id of ["checkout", "preview", "database", "domain", "legal"]) await expect(main.locator(`[data-check="${id}"]`)).toHaveAttribute("data-ok", "false");
-  await expect(main.locator(`[data-check="catalogue"]`)).toHaveAttribute("data-ok", "true");
+  // The test build: checkout closed, embedded database, no domain; no draft preview, policies published.
+  for (const id of ["checkout", "database", "domain"]) await expect(main.locator(`[data-check="${id}"]`)).toHaveAttribute("data-ok", "false");
+  for (const id of ["catalogue", "legal", "preview"]) await expect(main.locator(`[data-check="${id}"]`)).toHaveAttribute("data-ok", "true");
   await expect(main.getByRole("progressbar")).toBeVisible();
   await expect(main).not.toContainText("test-owner-password-123");
 });

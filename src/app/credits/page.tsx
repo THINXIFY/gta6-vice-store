@@ -7,14 +7,41 @@ import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Layout";
 import { mediaCredits, trailerEmbeds, trailers } from "@/config/media";
 import { isUsable } from "@/lib/media";
+import { site } from "@/config/site";
 
 export const metadata: Metadata = {
   title: "Media credits",
-  description: "Credits for the Grand Theft Auto VI imagery, artwork and trailers shown on this store, with copyright and trademark notices.",
+  description: "Credits for the artwork, Grand Theft Auto VI imagery and trailers shown on this store, with copyright and trademark notices.",
   alternates: { canonical: "/credits" },
 };
 
 const shown = mediaCredits.filter((c) => isUsable(c.item));
+// Official artwork carries a source link; everything else was made for this store.
+const official = shown.filter((c) => c.item.sourceUrl);
+const own = shown.filter((c) => !c.item.sourceUrl);
+
+function ArtList({ entries }: { entries: typeof shown }) {
+  return (
+    <ul className="grid gap-px overflow-hidden rounded-media bg-warm/8">
+      {entries.map(({ item, title, usedIn, note }) => (
+        <li key={item.id} className="grid grid-cols-[6.5rem_1fr] items-center gap-5 bg-obsidian p-4 sm:grid-cols-[9rem_1fr] sm:gap-7 sm:p-5">
+          <div className="relative aspect-video overflow-hidden rounded-lg bg-midnight">
+            <Image src={item.src} alt={item.alt} fill sizes="9rem" className="object-cover" />
+          </div>
+          <div className="min-w-0 text-sm">
+            <p className="text-base font-semibold">{title}</p>
+            <p className="mt-1 text-warm/60">Used in: {usedIn}</p>
+            <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-warm/60">
+              <span>© {item.credit}</span>
+              {item.sourceUrl && <SourceLink href={item.sourceUrl}>Source</SourceLink>}
+            </p>
+            {note && <p className="mt-1 text-xs text-warm/45">{note}</p>}
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
 
 function Block({ id, title, intro, children }: { id: string; title: string; intro?: string; children: ReactNode }) {
   return (
@@ -58,29 +85,21 @@ export default function CreditsPage() {
         </Container>
 
         <Container className="mt-12">
-          <Block id="credits-artwork" title="Artwork and screenshots" intro="Every supplied image currently shown on this site, where it appears and where it was published.">
-            {shown.length ? (
-              <ul className="grid gap-px overflow-hidden rounded-media bg-warm/8">
-                {shown.map(({ item, title, usedIn }) => (
-                  <li key={item.id} className="grid grid-cols-[6.5rem_1fr] items-center gap-5 bg-obsidian p-4 sm:grid-cols-[9rem_1fr] sm:gap-7 sm:p-5">
-                    <div className="relative aspect-video overflow-hidden rounded-lg bg-midnight">
-                      <Image src={item.src} alt={item.alt} fill sizes="9rem" className="object-cover" />
-                    </div>
-                    <div className="min-w-0 text-sm">
-                      <p className="text-base font-semibold">{title}</p>
-                      <p className="mt-1 text-warm/60">Used in: {usedIn}</p>
-                      <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-warm/60">
-                        <span>© {item.credit}</span>
-                        {item.sourceUrl && <SourceLink href={item.sourceUrl}>Source</SourceLink>}
-                      </p>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="text-warm/65">No supplied artwork is shown on this site yet. Imagery on the page is original illustration.</p>
-            )}
-          </Block>
+          {own.length > 0 && (
+            <Block id="credits-own" title="Store artwork" intro={`Original artwork created for ${site.name}.`}>
+              <ArtList entries={own} />
+            </Block>
+          )}
+          {official.length > 0 && (
+            <Block id="credits-official" title="Game artwork" intro="Official Grand Theft Auto VI artwork and screenshots, with where each was published.">
+              <ArtList entries={official} />
+            </Block>
+          )}
+          {!shown.length && (
+            <Block id="credits-artwork" title="Artwork">
+              <p className="text-warm/65">Imagery on this site is original illustration.</p>
+            </Block>
+          )}
 
           {trailerEmbeds && (
             <Block id="credits-video" title="Trailers" intro="Played through YouTube's embedded player from Rockstar Games' official channel. Nothing is re-hosted.">

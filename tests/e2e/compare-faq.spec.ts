@@ -82,7 +82,7 @@ test.describe("FAQ", () => {
     expect(org.name).toBeTruthy();
     expect(org.logo.url).toMatch(/\/brand\/icon-512\.png$/);
     expect(org).not.toHaveProperty("legalName");
-    expect(org).not.toHaveProperty("email");
+    expect(org.email).toBe("gta@vicestoregaming.com");
     const videos = data.filter((d) => d["@type"] === "VideoObject");
     expect(videos.length).toBeGreaterThan(0);
     for (const v of videos) {

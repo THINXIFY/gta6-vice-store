@@ -360,3 +360,19 @@
   from { transform: scaleY(1); }
   to { transform: scaleY(0.3) translateY(1px); }
 }
+
+/* Inner pages: the header rises in once (CSS, so no flash before scripts load). Skipped without motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .motion-ok [data-page-intro] > * > *,
+  .motion-ok [data-page-intro] > :not(div) {
+    animation: page-rise 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .motion-ok [data-page-intro] > * > :nth-child(2) { animation-delay: 0.08s; }
+  .motion-ok [data-page-intro] > * > :nth-child(3) { animation-delay: 0.16s; }
+  .motion-ok [data-page-intro] > * > :nth-child(4) { animation-delay: 0.24s; }
+  .motion-ok [data-page-intro] > :nth-child(2) > * { animation-delay: 0.3s; }
+}
+@keyframes page-rise {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: none; }
+}

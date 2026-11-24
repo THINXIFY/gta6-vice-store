@@ -263,9 +263,9 @@ export const gallery: GalleryItem[] = [
 ];
 
 /** Every supplied asset in use, with where it appears. Drives /credits. */
-export const mediaCredits: { item: MediaItem; title: string; usedIn: string }[] = [
-  { item: heroNight, title: "Hero key frame (Vice City beachfront at night)", usedIn: "Hero" },
-  { item: heroMorning, title: "Hero key frame at sunrise", usedIn: "Hero (scroll)" },
+export const mediaCredits: { item: MediaItem; title: string; usedIn: string; note?: string }[] = [
+  { item: heroNight, title: "Hero key frame (Vice City beachfront at night)", usedIn: "Hero", note: "Includes the Grand Theft Auto VI logo, a trademark of Take-Two Interactive Software, Inc." },
+  { item: heroMorning, title: "Hero key frame at sunrise", usedIn: "Hero (scroll)", note: "Includes the Grand Theft Auto VI logo, a trademark of Take-Two Interactive Software, Inc." },
   { item: viceCitySign, title: "Vice City sign at dusk", usedIn: "Gallery" },
   { item: showcase[0]!, title: "Vice City at sunset (aerial view)", usedIn: "Explore, gallery" },
   { item: exploreHelicopter, title: "Helicopter animation", usedIn: "Explore" },

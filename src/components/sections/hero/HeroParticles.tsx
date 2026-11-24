@@ -35,6 +35,10 @@ export function HeroParticles({ className, density = 12000, max = 130 }: { class
   useEffect(() => {
     const canvas = ref.current;
     if (!canvas || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    // Lighter on weaker devices: no particle canvas with Data Saver on, or on low-end touch devices.
+    const nav = navigator as Navigator & { connection?: { saveData?: boolean }; deviceMemory?: number };
+    const touch = matchMedia("(pointer: coarse)").matches;
+    if (nav.connection?.saveData || (touch && ((nav.hardwareConcurrency ?? 8) <= 4 || (nav.deviceMemory ?? 8) < 4))) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 

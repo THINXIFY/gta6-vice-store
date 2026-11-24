@@ -1,9 +1,8 @@
 import { expect, test } from "@playwright/test";
 
 /**
- * GTA-11A information pages. None is published yet (seller details unconfirmed), so live
- * builds must 404 them and never link to them; preview builds render them as marked,
- * noindex drafts with semantic headings and structured data.
+ * Information pages are published: each has one h1, indexable metadata (robots follow the site
+ * setting), a canonical URL, structured data, a footer link and the support address.
  */
 
 const PAGES = [
@@ -11,44 +10,37 @@ const PAGES = [
   { path: "/contact", h1: "Contact us", schema: "ContactPage" },
   { path: "/terms", h1: "Terms & Conditions", schema: "WebPage" },
   { path: "/privacy", h1: "Privacy Policy", schema: "WebPage" },
-  { path: "/refund-policy", h1: "Refund Policy", schema: "WebPage" },
+  { path: "/refund-policy", h1: "Refund & Cancellation Policy", schema: "WebPage" },
   { path: "/cookies", h1: "Cookie Policy", schema: "WebPage" },
 ];
 
 for (const p of PAGES) {
-  test(`${p.path}: unpublished draft is hidden live, marked and noindex in preview`, async ({ page }) => {
+  test(`${p.path}: published, structured and linked from the footer`, async ({ page }) => {
     const res = await page.goto(p.path);
-    if (res!.status() === 404) {
-      await page.goto("/");
-      await expect(page.locator(`footer a[href="${p.path}"]`)).toHaveCount(0);
-      return;
-    }
     expect(res!.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(p.h1);
-    await expect(page.locator("main")).toHaveAttribute("data-status", "draft");
-    await expect(page.getByRole("note")).toContainText("not published");
-    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
+    await expect(page.locator("h1")).toHaveCount(1);
+    await expect(page.locator("main")).not.toHaveAttribute("data-status", "draft");
+    await expect(page.locator("mark[data-pending]")).toHaveCount(0);
     await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", new RegExp(`${p.path}$`));
-    // Unconfirmed business facts are visible markers, never invented values; the banner counts them.
-    const marks = await page.locator("mark[data-pending]").count();
-    if (marks) await expect(page.getByRole("note")).toContainText(`${marks} ${marks === 1 ? "detail needs" : "details need"} confirming`);
-    else await expect(page.getByRole("note")).toContainText("Ready for review");
+    await expect(page.locator("main")).toContainText("Last updated");
     const ld = (await page.locator('script[type="application/ld+json"]').allTextContents()).map((t) => JSON.parse(t) as { "@type": string });
     expect(ld.map((d) => d["@type"])).toEqual(expect.arrayContaining([p.schema, "BreadcrumbList"]));
-    // One h1, then h2 sections.
-    await expect(page.locator("h1")).toHaveCount(1);
-    expect(await page.locator("article h2").count()).toBeGreaterThan(1);
+    expect(await page.locator("main h2").count()).toBeGreaterThan(1);
     await expect(page.locator(`footer a[href="${p.path}"]`).first()).toBeAttached();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(0);
   });
 }
 
-test("privacy and cookie drafts disclose advertising, cookies and third parties", async ({ page }) => {
-  const res = await page.goto("/privacy");
-  test.skip(res!.status() === 404, "policies are unpublished in live builds");
-  const main = page.locator("main");
-  for (const text of ["does not currently show advertising", "Google AdSense", "Ads Settings", "CoinGecko", "privacy-enhanced mode", "private keys or recovery phrases"]) await expect(main).toContainText(text);
+test("policies cover payments, data, cookies and the support address", async ({ page }) => {
+  await page.goto("/privacy");
+  for (const text of ["gta@vicestoregaming.com", "CoinGecko", "privacy-enhanced mode", "private keys or recovery phrases", "90 days"]) await expect(page.locator("main")).toContainText(text);
   await page.goto("/cookies");
-  for (const text of ["do not use analytics, tracking or advertising cookies", "consent banner", "local storage"]) await expect(page.locator("main")).toContainText(text);
+  for (const text of ["do not use analytics, tracking or advertising cookies", "local storage"]) await expect(page.locator("main")).toContainText(text);
+  await page.goto("/terms");
+  for (const text of ["irreversible", "never approve payments automatically", "statutory rights"]) await expect(page.locator("main")).toContainText(text);
+  await page.goto("/refund-policy");
+  await expect(page.locator("main")).toContainText("same cryptocurrency and on the same network");
 });
 
 test("contact form validates, then saves a message with a reference", async ({ page, request }) => {

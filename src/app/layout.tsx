@@ -44,7 +44,7 @@ export const metadata: Metadata = {
   robots: { index: indexable, follow: indexable },
   // Search Console / Bing Webmaster ownership tokens (meta-tag method), set per environment.
   verification: {
-    ...(process.env.GOOGLE_SITE_VERIFICATION && { google: process.env.GOOGLE_SITE_VERIFICATION }),
+    google: process.env.GOOGLE_SITE_VERIFICATION || brand.googleSiteVerification,
     ...(process.env.BING_SITE_VERIFICATION && { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }),
   },
 };
