@@ -2,8 +2,6 @@
 .env*
 !.env.example
 .data/
-media-pending/
-public/preview-media/
 review/
 .next/
 .next-e2e/

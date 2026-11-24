@@ -1,13 +1,12 @@
 import { brand } from "@/brand/brand";
-import { asset } from "@/lib/mediaRights";
+const M = "/media/";
 const ownArt = `${brand.name}, original AI-generated artwork`;
 import type { EditionArtItem, GalleryItem, MediaItem, Trailer } from "./types";
 
 /**
  * Media registry.
- * Rights: only "original" / "licensed" assets render on the live site. Every supplied file goes
- * through asset(): only files on the cleared list in src/lib/mediaRights.ts go live (served from
- * /media after `npm run media:package`). Without a usable asset, original drawn art is used.
+ * Images live in public/media (git-ignored; sent to the server with `npm run media:package`).
+ * Without an image (empty src), original drawn art is used.
  * `sourceUrl` feeds /credits. Attribution is not permission.
  */
 
@@ -38,7 +37,7 @@ const viceCitySign: MediaItem = {
   id: "vice-city-01",
   kind: "image",
   alt: "The Vice City sign at dusk as a jet passes low overhead",
-  ...asset("gallery-city-sign.jpg"),
+  src: M + "gallery-city-sign.jpg",
   width: 3840,
   height: 2160,
   sourceUrl: SITE,
@@ -50,10 +49,10 @@ const heroNight: MediaItem = {
   id: "hero-night",
   kind: "image",
   alt: "A neon-lit Vice City beachfront boulevard at night: a sports car on the wet road, palm trees, the Oceanview Hotel and the Grand Theft Auto VI logo over the skyline",
-  ...asset("hero-night.png"),
+  src: M + "hero-night.png",
   width: 1672,
   height: 941,
-  credit: "Supplied artwork, AI-generated (contains the Grand Theft Auto VI logo)",
+  credit: ownArt,
 };
 
 /** The same beachfront at sunrise (identical framing): scrolling turns night into morning. */
@@ -61,10 +60,10 @@ const heroMorning: MediaItem = {
   id: "hero-morning",
   kind: "image",
   alt: "",
-  ...asset("hero-morning.png"),
+  src: M + "hero-morning.png",
   width: 1672,
   height: 941,
-  credit: "Supplied artwork, AI-generated (contains the Grand Theft Auto VI logo)",
+  credit: ownArt,
 };
 
 export const heroArt: HeroArt = {
@@ -88,7 +87,7 @@ export const editionArt: EditionArtItem[] = [
       id: "standard-key-art",
       kind: "image",
       alt: "Grand Theft Auto VI Standard Edition key art over a palm-lined Vice City street",
-      ...asset("edition-standard.jpg"),
+      src: M + "edition-standard.jpg",
       width: 1280,
       height: 720,
       sourceUrl: STORE,
@@ -101,7 +100,7 @@ export const editionArt: EditionArtItem[] = [
       id: "ultimate-key-art",
       kind: "image",
       alt: "Grand Theft Auto VI Ultimate Edition key art against a sunset",
-      ...asset("edition-ultimate.jpg"),
+      src: M + "edition-ultimate.jpg",
       width: 1280,
       height: 720,
       sourceUrl: STORE,
@@ -117,7 +116,7 @@ export const showcase: (MediaItem & { caption: string })[] = [
     kind: "image",
     alt: "Aerial view of Vice City at sunset: the downtown skyline across the bay, neon hotels and a palm-lined boulevard beside the beach",
     caption: "Vice City at sunset",
-    ...asset("vice-city-aerial.png"),
+    src: M + "vice-city-aerial.png",
     width: 1672,
     height: 941,
     credit: ownArt,
@@ -127,7 +126,7 @@ export const showcase: (MediaItem & { caption: string })[] = [
     kind: "image",
     alt: "Boobie Ike outside the Jack of Hearts club at night, phone in hand",
     caption: "Boobie Ike",
-    ...asset("leonida-nightlife.jpg"),
+    src: M + "leonida-nightlife.jpg",
     width: 3840,
     height: 2160,
     sourceUrl: SITE,
@@ -140,7 +139,7 @@ export const exploreHelicopter: MediaItem = {
   id: "explore-helicopter",
   kind: "image",
   alt: "",
-  ...asset("helicopter.gif"),
+  src: M + "helicopter.gif",
   width: 491,
   height: 193,
   credit: ownArt,
@@ -155,7 +154,7 @@ const regionScene = (id: string, focus: string): MediaItem & { focus: string } =
   id: `region-${id}`,
   kind: "image",
   alt: "",
-  ...asset(`region-${id}.png`),
+  src: `${M}region-${id}.png`,
   width: 1672,
   height: 941,
   credit: ownArt,
@@ -180,7 +179,7 @@ export const characterArt = {
     id: "jason-lucia-key-art",
     kind: "image",
     alt: "Jason Duval and Lucia Caminos at sunset, Lucia sitting on the hood of a red car",
-    ...asset("characters.webp"),
+    src: M + "characters.webp",
     width: 1280,
     height: 720,
     sourceUrl: "https://www.youtube.com/watch?v=rz1B4B2yBZY",
@@ -194,7 +193,7 @@ const castKeyArt: MediaItem = {
   id: "key-art-portrait",
   kind: "image",
   alt: "Grand Theft Auto VI key art: a collage of Jason, Lucia and other Leonida characters around the game logo",
-  ...asset("key-art-portrait.jpg"),
+  src: M + "key-art-portrait.jpg",
   width: 1212,
   height: 1497,
   sourceUrl: STORE,
@@ -206,7 +205,7 @@ export const closingBackdrop: MediaItem = {
   id: "palm-street-backdrop",
   kind: "image",
   alt: "",
-  ...asset("closing-backdrop.jpg"),
+  src: M + "closing-backdrop.jpg",
   width: 3840,
   height: 1646,
   sourceUrl: STORE,
@@ -218,7 +217,7 @@ export const codeInBoxArt: MediaItem = {
   id: "code-in-box",
   kind: "image",
   alt: "Rockstar's Grand Theft Auto VI code-in-box packaging for PlayStation 5",
-  ...asset("code-in-box.jpg"),
+  src: M + "code-in-box.jpg",
   width: 300,
   height: 374,
   sourceUrl: STORE,
@@ -230,7 +229,7 @@ export const shareImage: MediaItem = {
   id: "share-image",
   kind: "image",
   alt: "Grand Theft Auto VI key art",
-  ...asset("share-image.jpg"),
+  src: M + "share-image.jpg",
   width: 1200,
   height: 630,
   sourceUrl: STORE,

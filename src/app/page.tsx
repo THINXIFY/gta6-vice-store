@@ -17,7 +17,7 @@ import { Trailers } from "@/components/sections/trailers/Trailers";
 import { StructuredData } from "@/components/seo/StructuredData";
 import { BLOCKS, type BlockId } from "@/lib/blocks";
 import type { Catalog } from "@/lib/catalog";
-import { contentPreview, mediaPreview } from "@/lib/media";
+import { contentPreview } from "@/lib/media";
 import { getCatalog } from "@/server/catalog";
 import { getHome } from "@/server/home";
 import { getContent } from "@/server/content";
@@ -59,7 +59,7 @@ export default async function Home() {
   const blocks = home.filter((b) => b.enabled && b.id !== "hero");
   return (
     <PageMotion>
-      <main id="main" className="overflow-x-clip" data-media-preview={mediaPreview || undefined} data-content-preview={contentPreview || undefined}>
+      <main id="main" className="overflow-x-clip" data-content-preview={contentPreview || undefined}>
         <StructuredData catalog={catalog} />
         {render.hero()}
 

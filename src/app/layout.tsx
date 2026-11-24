@@ -9,8 +9,6 @@ import { Header } from "@/components/layout/Header";
 import { SmoothScroll } from "@/components/motion/SmoothScroll";
 import { commerce } from "@/config/product";
 import { site } from "@/config/site";
-import { shareImage } from "@/config/media";
-import { isUsable } from "@/lib/media";
 import { getCatalog } from "@/server/catalog";
 import { getNav } from "@/server/home";
 import { getContent } from "@/server/content";
@@ -40,10 +38,8 @@ export const metadata: Metadata = {
     url: "/",
     title: `${site.title} | ${site.name}`,
     description,
-    // A usable (licensed, or local-preview) key-art image; otherwise the generated brand card (opengraph-image.tsx).
-    ...(isUsable(shareImage) && { images: [{ url: shareImage.src, width: shareImage.width, height: shareImage.height, alt: shareImage.alt }] }),
   },
-  twitter: { card: "summary_large_image", title: `${site.title} | ${site.name}`, description, ...(isUsable(shareImage) && { images: [shareImage.src] }) },
+  twitter: { card: "summary_large_image", title: `${site.title} | ${site.name}`, description },
   appleWebApp: { title: site.name, statusBarStyle: "black-translucent" },
   robots: { index: indexable, follow: indexable },
   // Search Console / Bing Webmaster ownership tokens (meta-tag method), set per environment.

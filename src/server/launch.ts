@@ -6,7 +6,7 @@ import { site } from "@/config/site";
 import * as s from "@/db/schema";
 import { editionName, platformShortName } from "@/lib/catalog";
 import { checkoutOpen } from "@/lib/checkout";
-import { contentPreview, mediaPreview } from "@/lib/media";
+import { contentPreview } from "@/lib/media";
 import { require2fa } from "./auth";
 import { getCatalog } from "./catalog";
 import { getContent } from "./content";
@@ -92,14 +92,12 @@ export async function launchChecks(): Promise<Check[]> {
     {
       id: "preview",
       group: "Store",
-      title: "Preview modes off",
-      ok: !mediaPreview && !contentPreview,
+      title: "Draft preview off",
+      ok: !contentPreview,
       required: true,
       detail:
-        mediaPreview || contentPreview
-          ? `On: ${[mediaPreview && "media preview (unlicensed images)", contentPreview && "content preview (drafts)"].filter(Boolean).join(", ")}. Never on a public site.`
-          : "Only licensed media and published text are shown.",
-      fix: { label: "Unset NEXT_PUBLIC_MEDIA_PREVIEW and NEXT_PUBLIC_CONTENT_PREVIEW" },
+        contentPreview ? "On: draft text is shown. Never on a public site." : "Only published text is shown.",
+      fix: { label: "Unset NEXT_PUBLIC_CONTENT_PREVIEW" },
     },
     {
       id: "wallets",

@@ -16,8 +16,8 @@ and log files. It uses the server's Node.js. No existing config, database or ser
 | Backups | `/srv/vice-store/.data/backups` (git-ignored) |
 | Licensed artwork | `/srv/vice-store/public/media` (git-ignored, from the media package) |
 
-The site goes live as a **non-transactional preview**: checkout off, search indexing off, only
-licensed media (unlicensed files are not in Git, so they never reach the server).
+The site goes live as a **non-transactional preview**: checkout off, search indexing off. Images
+are not in Git: they are sent with the media package (see *Images* below).
 
 ---
 
@@ -80,7 +80,6 @@ cat > /etc/vice-store/env <<EOF
 NEXT_PUBLIC_SITE_URL=https://vicestoregaming.com
 NEXT_PUBLIC_INDEXABLE=
 NEXT_PUBLIC_CHECKOUT_ENABLED=
-NEXT_PUBLIC_MEDIA_PREVIEW=
 NEXT_PUBLIC_CONTENT_PREVIEW=
 DATABASE_URL=postgres://vicestore:$DB_PASS@127.0.0.1:5432/vicestore
 IP_HASH_SALT=$(openssl rand -hex 32)
@@ -204,16 +203,13 @@ journalctl -u vice-store -n 100 --no-pager      # app log (add -f to follow)
 tail -n 50 /var/log/nginx/vice-store.error.log
 ```
 
-**Publishing licensed artwork** (hero, sunrise, editions, characters, regions, gallery, closing
-backdrop). Supplied images go live only when listed in `src/lib/mediaRights.ts`: `"licensed"`
-with written commercial-use permission on file, or `"original"` for artwork you created with no
-third-party marks. Files are never altered. They travel outside Git.
+**Images** (hero, sunrise, editions, characters, regions, gallery, closing backdrop): they live
+in `public/media/` on your PC and travel outside Git. After adding or changing images:
 
-On Windows (PowerShell, in the project folder), after adding the file to that list:
+On Windows (PowerShell, in the project folder):
 
 ```powershell
-npm run media:package          # lists the cleared images; builds deploy-package\vice-store-media.tar.gz
-git add src/lib/mediaRights.ts; git commit -m "Clear artwork"; git push
+npm run media:package          # builds deploy-packageice-store-media.tar.gz (all images, with checksums)
 scp deploy-package\vice-store-media.tar.gz root@2.25.169.72:/tmp/
 ```
 
@@ -227,7 +223,7 @@ chown -R vicestore:vicestore /srv/vice-store/public/media
 ```
 
 Then run the update command above (pull, build, restart). A rebuild is required: Next.js serves
-only files present at build time, and the build drops any file that isn't on the cleared list.
+only files present at build time.
 Check one image: `curl -sI https://vicestoregaming.com/media/vice-city-aerial.png | head -1` → 200.
 
 **Changing a `NEXT_PUBLIC_*` setting** (domain, indexing, checkout): edit `/etc/vice-store/env`,

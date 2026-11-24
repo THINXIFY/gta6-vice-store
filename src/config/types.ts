@@ -49,12 +49,6 @@ export type MediaItem = {
   poster?: string;
   width: number;
   height: number;
-  /**
-   * Rights status. Only "original" and "licensed" render on the live site.
-   * "pending" = supplied but rights unconfirmed: renders only in local media preview
-   * (NEXT_PUBLIC_MEDIA_PREVIEW=1), never in a normal build.
-   */
-  license: "placeholder" | "original" | "licensed" | "pending";
   /** Rights holder, e.g. "Rockstar Games". */
   credit?: string;
   /** Where the asset was published by its rights holder (for /credits). */

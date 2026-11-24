@@ -62,9 +62,8 @@ Wallet addresses are never stored in code. Enter them in Admin → Wallets.
 
 ## Media
 
-The live site shows only original or licensed images. Supplied images without a licence go in
-`media-pending/` (not committed) and appear only in local preview (`NEXT_PUBLIC_MEDIA_PREVIEW=1`).
-Licensed images go in `public/media/`. Without usable images, the site uses its own drawn artwork.
+Site images live in `public/media/` (not committed). `npm run media:package` packs them for the
+server (see [deploy/README.md](deploy/README.md)). Without an image, the site uses its own drawn artwork.
 
 ## Documentation
 

@@ -99,7 +99,7 @@ Intent: T = transactional, C = commercial investigation, I = informational, N = 
   - Canonicals per page; transactional and admin pages are `noindex` with their own canonical.
 - **Social:** a generated Open Graph and Twitter card (`opengraph-image.tsx`, brand fonts, no unlicensed art) and `icon.svg` / `apple-icon`.
 - **Crawling:**
-  - `robots.ts`: before launch, disallow everything. After launch, allow all except `/admin`, `/api/`, `/checkout`, `/order-status` and `/preview-media/`, and point to the sitemap.
+  - `robots.ts`: before launch, disallow everything. After launch, allow all except `/admin`, `/api/`, `/checkout` and `/order-status`, and point to the sitemap.
   - `sitemap.ts`: published pages only, after launch.
 - **Verification:** the `GOOGLE_SITE_VERIFICATION` and `BING_SITE_VERIFICATION` environment variables become meta tags.
 - **Structured data:** one `@graph`, gated on reality.
@@ -152,7 +152,7 @@ Before the filter fix: LCP 0.86 s (mobile) and 0.49 s (desktop), but interaction
 1. **Pricing credibility.** The provisional prices ($19 / $39) are far below the official $79.99 / $99.99. Without documented authorised supply this looks like the "too good to be true" pattern behind Google Ads and Merchant Center *Misrepresentation* and *Unreliable claims* suspensions, and it erodes user trust. Set prices that reflect real, authorised supply, and be ready to show supplier documentation.
 2. **Business identity.** Legal name, address and support contact are empty. These are required for Merchant Center, Ads verification, the legal pages and Organization markup.
 3. **Domain and brand.** Use a domain without Rockstar or Take-Two marks (the proposed one contains "rockstar"). In ads, trademark use is generally permitted only for genuine resale of the product, so expect trademark reviews.
-4. **Media rights.** The supplied key art is unlicensed and preview-only. The production site uses original art. Get written permission before using official imagery.
+4. **Media.** Site images are served from `/media/` (sent to the server with the media package).
 5. **Crypto payments.** Read the current Google Ads cryptocurrency and financial-products rules for the target countries before any ad mentions crypto payment. Selling a game for crypto is not a crypto product, but ad copy can trigger reviews.
 6. **AdSense.** Ads require the published privacy and cookie policies (drafted), plus a Google-certified consent management platform for the EEA, UK and Switzerland before enabling them.
 

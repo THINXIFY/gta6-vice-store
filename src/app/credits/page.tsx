@@ -52,8 +52,8 @@ export default function CreditsPage() {
           </Link>
           <h1 className="mt-8 font-display text-display-xl font-extrabold tracking-[-0.01em] uppercase">Media credits</h1>
           <p className="mt-6 max-w-[40rem] text-lead text-warm/72">
-            Grand Theft Auto VI imagery and trailers belong to Rockstar Games and Take-Two Interactive. We credit them here. Crediting a work is not the same as
-            permission to use it: supplied artwork appears on the live store only once it is licensed.
+            Grand Theft Auto VI imagery and trailers belong to Rockstar Games and Take-Two Interactive. We credit them here, alongside the
+            artwork made for this store.
           </p>
         </Container>
 
@@ -72,9 +72,6 @@ export default function CreditsPage() {
                       <p className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-warm/60">
                         <span>© {item.credit}</span>
                         {item.sourceUrl && <SourceLink href={item.sourceUrl}>Source</SourceLink>}
-                      </p>
-                      <p className="mt-1 text-xs text-warm/40">
-                        {item.license === "licensed" ? "Licensed for use on this store." : "Local preview only. Commercial permission pending."}
                       </p>
                     </div>
                   </li>
@@ -112,8 +109,8 @@ export default function CreditsPage() {
                 companies. YouTube is a trademark of Google LLC.
               </p>
               <p className="text-sm text-warm/55">
-                Site typefaces: Big Shoulders and Hanken Grotesk (SIL Open Font License, via Google Fonts). Icons: Lucide (ISC License). Illustrations shown
-                when no licensed artwork is available are original work for this site.
+                Site typefaces: Big Shoulders and Hanken Grotesk (SIL Open Font License, via Google Fonts). Icons: Lucide (ISC License). Drawn illustrations are
+                original work for this site.
               </p>
             </div>
           </Block>

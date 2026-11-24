@@ -22,7 +22,7 @@ Copy `.env.example` into the host's environment and fill it in. The ones that ma
 | `NEXT_PUBLIC_SITE_URL` | `https://www.client-domain.com` (no trailing slash). **Build time.** |
 | `NEXT_PUBLIC_INDEXABLE` | `true` only when the store is ready to appear in search. **Build time.** |
 | `NEXT_PUBLIC_CHECKOUT_ENABLED` | `true` only once the launch checklist passes; empty = non-transactional preview. **Build time.** |
-| `NEXT_PUBLIC_MEDIA_PREVIEW`, `NEXT_PUBLIC_CONTENT_PREVIEW` | Leave **empty** on every deployed site. |
+| `NEXT_PUBLIC_CONTENT_PREVIEW` | Leave **empty** on every deployed site. |
 | `DATABASE_URL` | `postgres://user:password@host:5432/db` |
 | `IP_HASH_SALT` | Long random string: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"` |
 | `FULFILLMENT_KEY` | Encrypts game codes: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Back it up**: codes cannot be read without it. |

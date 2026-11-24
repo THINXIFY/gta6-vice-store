@@ -14,6 +14,5 @@ const run = (cmd, args) => {
   if (r.status !== 0) process.exit(r.status ?? 1);
 };
 
-run("node", ["scripts/sync-preview-media.mjs"]);
 run("npx", ["next", "build"]);
 run("npx", ["playwright", "test", ...process.argv.slice(2)]);

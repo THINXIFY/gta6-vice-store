@@ -11,9 +11,6 @@ test-results/
 .DS_Store
 .claude/settings.local.json
 
-# Unlicensed supplied media: never commit or deploy (see scripts/sync-preview-media.mjs)
-media-pending/
-public/preview-media/
 
 # Local embedded database (PGlite)
 .data/
@@ -34,6 +31,6 @@ npm-debug.log*
 .vercel/
 .turbo/
 
-# Authorised supplied artwork travels in the media package, not in Git (see deploy/README.md)
+# Site images travel in the media package, not in Git (see deploy/README.md)
 public/media/
 deploy-package/

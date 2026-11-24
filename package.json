@@ -6,9 +6,7 @@
     "node": ">=20.9"
   },
   "scripts": {
-    "predev": "node scripts/sync-preview-media.mjs",
     "dev": "next dev",
-    "prebuild": "node scripts/sync-preview-media.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
