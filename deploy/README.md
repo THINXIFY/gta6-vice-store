@@ -200,6 +200,33 @@ journalctl -u vice-store -n 100 --no-pager      # app log (add -f to follow)
 tail -n 50 /var/log/nginx/vice-store.error.log
 ```
 
+**Publishing licensed artwork** (hero, sunrise, editions, characters, regions, gallery, closing
+backdrop). Supplied images go live only when `src/config/media-rights.json` records their
+written commercial-use permission (`"status": "licensed"` + `"permission"`), or, for artwork you
+created yourself with no third-party marks, `"original"`. Files are never altered. They travel
+outside Git.
+
+On Windows (PowerShell, in the project folder), after recording the permission:
+
+```powershell
+npm run media:package          # lists every image's status; builds deploy-package\vice-store-media.tar.gz
+git add src/config/media-rights.json; git commit -m "Record artwork permissions"; git push
+scp deploy-package\vice-store-media.tar.gz root@2.25.169.72:/tmp/
+```
+
+On the VPS (as root):
+
+```bash
+install -d -o vicestore -g vicestore /srv/vice-store/app/public/media
+tar -xzf /tmp/vice-store-media.tar.gz -C /srv/vice-store/app/public/media
+chown -R vicestore:vicestore /srv/vice-store/app/public/media
+(cd /srv/vice-store/app/public/media && sha256sum -c SHA256SUMS) && rm /tmp/vice-store-media.tar.gz
+```
+
+Then run the update command above (pull, build, restart). A rebuild is required: Next.js serves
+only files present at build time, and the build drops any file that isn't authorised in the
+register. Check one image: `curl -sI https://vicestoregaming.com/media/<file> | head -1` → 200.
+
 **Changing a `NEXT_PUBLIC_*` setting** (domain, indexing, checkout): edit `/etc/vice-store/env`,
 then run the update command (a rebuild is required), then restart.
 

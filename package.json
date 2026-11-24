@@ -21,7 +21,8 @@
     "test:email": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/test-email.mjs",
     "db:backup": "node scripts/db-backup.mjs",
     "new-client": "node scripts/new-client.mjs",
-    "brand:assets": "node scripts/brand-assets.mjs"
+    "brand:assets": "node scripts/brand-assets.mjs",
+    "media:package": "node scripts/media-package.mjs"
   },
   "dependencies": {
     "@electric-sql/pglite": "0.5.15",

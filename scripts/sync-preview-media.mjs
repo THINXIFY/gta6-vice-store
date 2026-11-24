@@ -8,11 +8,13 @@
  *  - otherwise → deletes /public/preview-media, so a normal build contains none of them.
  * Refuses to build with media or content preview on while marked indexable (a production
  * misconfiguration).
- * Licensed files belong in /public/media and are unaffected.
+ * Authorised files (src/config/media-rights.json) are kept in /public/media, byte-for-byte;
+ * register files that are not authorised are removed from it.
  */
 import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";
 import nextEnv from "@next/env";
+import { syncAuthorised } from "./media-rights.mjs";
 
 const root = process.cwd();
 nextEnv.loadEnvConfig(root, process.env.npm_lifecycle_event === "predev");
@@ -44,3 +46,6 @@ if (preview && existsSync(source)) {
 } else {
   console.log("✓ Media preview off: no unlicensed media in public/.");
 }
+
+const { authorised } = await syncAuthorised(root);
+console.log(`✓ Authorised artwork in public/media: ${authorised.filter((e) => e.present).length} file(s).`);

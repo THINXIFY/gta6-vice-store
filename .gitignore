@@ -33,3 +33,7 @@ secrets/
 npm-debug.log*
 .vercel/
 .turbo/
+
+# Authorised supplied artwork travels in the media package, not in Git (see deploy/README.md)
+public/media/
+deploy-package/

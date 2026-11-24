@@ -1,18 +1,17 @@
+import { asset } from "@/lib/mediaRights";
 import type { EditionArtItem, GalleryItem, MediaItem, Trailer } from "./types";
 
 /**
  * Media registry.
- * Rights: only "original" / "licensed" assets render on the live site. Everything in
- * /media-pending was supplied from Rockstar's own store and channels and is "pending"
- * until written permission from Rockstar Games / Take-Two is on file — flip `license`
- * to "licensed" per asset once it is. Without a usable asset, original drawn art is used.
+ * Rights: only "original" / "licensed" assets render on the live site. Every supplied file goes
+ * through asset(): its status comes from src/config/media-rights.json (record the written
+ * permission there, then `npm run media:package`); authorised files are served from /media. Without a usable asset, original drawn art is used.
  * `sourceUrl` feeds /credits. Attribution is not permission.
  */
 
-const A = "/preview-media/";
 const STORE = "https://store.rockstargames.com/game/buy-gta-vi";
 const SITE = "https://www.rockstargames.com/VI";
-const rockstar = { license: "pending", credit: "Rockstar Games" } as const;
+const rockstar = { credit: "Rockstar Games" } as const;
 
 /** Art-directed hero: separate crops so each composition is framed for its screen. */
 export type HeroArt = {
@@ -37,7 +36,7 @@ const viceCitySign: MediaItem = {
   id: "vice-city-01",
   kind: "image",
   alt: "The Vice City sign at dusk as a jet passes low overhead",
-  src: `${A}imgi_132_01_-_Vice_City_01.jpg`,
+  ...asset("imgi_132_01_-_Vice_City_01.jpg"),
   width: 3840,
   height: 2160,
   sourceUrl: SITE,
@@ -49,10 +48,9 @@ const heroNight: MediaItem = {
   id: "hero-night",
   kind: "image",
   alt: "A neon-lit Vice City beachfront boulevard at night: a sports car on the wet road, palm trees, the Oceanview Hotel and the Grand Theft Auto VI logo over the skyline",
-  src: A + "gta-hero-home-new-1.png",
+  ...asset("gta-hero-home-new-1.png"),
   width: 1672,
   height: 941,
-  license: "pending",
   credit: "Supplied artwork (source unconfirmed)",
 };
 
@@ -61,10 +59,9 @@ const heroMorning: MediaItem = {
   id: "hero-morning",
   kind: "image",
   alt: "",
-  src: A + "gta-hero-home-new-morning.png",
+  ...asset("gta-hero-home-new-morning.png"),
   width: 1672,
   height: 941,
-  license: "pending",
   credit: "Supplied artwork (source unconfirmed)",
 };
 
@@ -89,7 +86,7 @@ export const editionArt: EditionArtItem[] = [
       id: "standard-key-art",
       kind: "image",
       alt: "Grand Theft Auto VI Standard Edition key art over a palm-lined Vice City street",
-      src: `${A}imgi_141_GTAVI_PreOrderWebstore_CompareEditionsThumbnail_Standard_1280x720_R01.jpg`,
+      ...asset("imgi_141_GTAVI_PreOrderWebstore_CompareEditionsThumbnail_Standard_1280x720_R01.jpg"),
       width: 1280,
       height: 720,
       sourceUrl: STORE,
@@ -102,7 +99,7 @@ export const editionArt: EditionArtItem[] = [
       id: "ultimate-key-art",
       kind: "image",
       alt: "Grand Theft Auto VI Ultimate Edition key art against a sunset",
-      src: `${A}imgi_140_UltimateEdition_07_en_us_R04_Deliv.jpg`,
+      ...asset("imgi_140_UltimateEdition_07_en_us_R04_Deliv.jpg"),
       width: 1280,
       height: 720,
       sourceUrl: STORE,
@@ -118,10 +115,9 @@ export const showcase: (MediaItem & { caption: string })[] = [
     kind: "image",
     alt: "Aerial view of Vice City at sunset: the downtown skyline across the bay, neon hotels and a palm-lined boulevard beside the beach",
     caption: "Vice City at sunset",
-    src: `${A}city-view.png`,
+    ...asset("city-view.png"),
     width: 1672,
     height: 941,
-    license: "pending",
     credit: "Supplied artwork (source unconfirmed)",
   },
   {
@@ -129,7 +125,7 @@ export const showcase: (MediaItem & { caption: string })[] = [
     kind: "image",
     alt: "Boobie Ike outside the Jack of Hearts club at night, phone in hand",
     caption: "Boobie Ike",
-    src: `${A}imgi_136_05_-_Boobie_Ike_02.jpg`,
+    ...asset("imgi_136_05_-_Boobie_Ike_02.jpg"),
     width: 3840,
     height: 2160,
     sourceUrl: SITE,
@@ -142,10 +138,9 @@ export const exploreHelicopter: MediaItem = {
   id: "explore-helicopter",
   kind: "image",
   alt: "",
-  src: `${A}helicaptor-gif.gif`,
+  ...asset("helicaptor-gif.gif"),
   width: 491,
   height: 193,
-  license: "pending",
   credit: "Supplied animation (source unconfirmed)",
 };
 
@@ -158,10 +153,9 @@ const regionScene = (id: string, focus: string): MediaItem & { focus: string } =
   id: `region-${id}`,
   kind: "image",
   alt: "",
-  src: `${A}region-${id}.png`,
+  ...asset(`region-${id}.png`),
   width: 1672,
   height: 941,
-  license: "pending",
   credit: "Supplied artwork (source unconfirmed)",
   focus,
 });
@@ -184,7 +178,7 @@ export const characterArt = {
     id: "jason-lucia-key-art",
     kind: "image",
     alt: "Jason Duval and Lucia Caminos at sunset, Lucia sitting on the hood of a red car",
-    src: `${A}imgi_10_maxresdefault.webp`,
+    ...asset("imgi_10_maxresdefault.webp"),
     width: 1280,
     height: 720,
     sourceUrl: "https://www.youtube.com/watch?v=rz1B4B2yBZY",
@@ -198,7 +192,7 @@ const castKeyArt: MediaItem = {
   id: "key-art-portrait",
   kind: "image",
   alt: "Grand Theft Auto VI key art: a collage of Jason, Lucia and other Leonida characters around the game logo",
-  src: `${A}imgi_123_GTAVI_PreOrderWebstore_GamesGrid_FOB_1212x1497_R01.jpg`,
+  ...asset("imgi_123_GTAVI_PreOrderWebstore_GamesGrid_FOB_1212x1497_R01.jpg"),
   width: 1212,
   height: 1497,
   sourceUrl: STORE,
@@ -210,7 +204,7 @@ export const closingBackdrop: MediaItem = {
   id: "palm-street-backdrop",
   kind: "image",
   alt: "",
-  src: `${A}imgi_122_GTAVI_PreOrderWebstore_HeroBackground_3840x1646_R03.jpg`,
+  ...asset("imgi_122_GTAVI_PreOrderWebstore_HeroBackground_3840x1646_R03.jpg"),
   width: 3840,
   height: 1646,
   sourceUrl: STORE,
@@ -222,7 +216,7 @@ export const codeInBoxArt: MediaItem = {
   id: "code-in-box",
   kind: "image",
   alt: "Rockstar's Grand Theft Auto VI code-in-box packaging for PlayStation 5",
-  src: `${A}imgi_22_GTAVI_PreOrderWebstore_CodeInABox_Flat_NR_SONY_300x374_R04.jpg`,
+  ...asset("imgi_22_GTAVI_PreOrderWebstore_CodeInABox_Flat_NR_SONY_300x374_R04.jpg"),
   width: 300,
   height: 374,
   sourceUrl: STORE,
@@ -234,7 +228,7 @@ export const shareImage: MediaItem = {
   id: "share-image",
   kind: "image",
   alt: "Grand Theft Auto VI key art",
-  src: `${A}imgi_152_GTAVI_PreOrderWebstore_MetadataImage_1200x630_R01.jpg`,
+  ...asset("imgi_152_GTAVI_PreOrderWebstore_MetadataImage_1200x630_R01.jpg"),
   width: 1200,
   height: 630,
   sourceUrl: STORE,
