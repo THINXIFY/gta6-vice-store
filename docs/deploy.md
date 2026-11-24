@@ -20,7 +20,7 @@ Copy `.env.example` into the host's environment and fill it in. The ones that ma
 | Setting | Value |
 | --- | --- |
 | `NEXT_PUBLIC_SITE_URL` | `https://www.client-domain.com` (no trailing slash). **Build time.** |
-| `NEXT_PUBLIC_INDEXABLE` | `true` only when the store is ready to appear in search. **Build time.** |
+| `NEXT_PUBLIC_INDEXABLE` | Indexing is on by default; `false` only for a staging copy. **Build time.** |
 | `NEXT_PUBLIC_CHECKOUT_ENABLED` | `true` only once the launch checklist passes; empty = non-transactional preview. **Build time.** |
 | `NEXT_PUBLIC_CONTENT_PREVIEW` | Leave **empty** on every deployed site. |
 | `DATABASE_URL` | `postgres://user:password@host:5432/db` |

@@ -46,8 +46,8 @@ export const assurances: Assurance[] = [
   { id: "authenticity", title: "Game authenticity", body: "Where our game codes come from will be stated here once our supply agreement is confirmed.", icon: "badge", status: "draft" },
   { id: "delivery", title: "Delivery information", body: "Delivery method and timing will be confirmed here before checkout opens.", icon: "send", status: "draft" },
   { id: "region", title: "Regional compatibility", body: "Region details for every code we sell will be confirmed here before checkout opens.", icon: "globe", status: "draft" },
-  { id: "support", title: "Customer support", body: "Support hours and contact details will be published here before checkout opens.", icon: "help", status: "draft" },
-  { id: "refunds", title: "Refund policy", body: "Our refund policy will be published here before checkout opens.", icon: "undo", status: "draft" },
+  { id: "support", title: "Customer support", body: "Email gta@vicestoregaming.com or use our contact form. Include your Payment ID and we reply by email.", icon: "help", status: "verified" },
+  { id: "refunds", title: "Refund policy", body: "If we cannot verify your payment or deliver your game, we refund what we received. A faulty code is replaced or refunded.", icon: "undo", status: "verified" },
 ];
 
 /**
@@ -91,6 +91,14 @@ export const faq: FaqItem[] = [
       "Ultimate Edition includes the Digital Standard Edition plus 16 extras: ’95 Grotti Cheetah, ’67 Vapid Dominator Buggy, Shitzu Squalo, Ganado Retro Build, Jason’s Safehouse Vehicles, Classic Car Collection, Hawk and Little Morgan Revolvers, Personalized Weapon Variants, Vice City Styles, Goodtime Gear, Rideout Customs Mod Shop, One-Eyed Willie’s Mod Shop, Sara’s Unisex Salon, Stock 305 Clothing Store, Electric Fang Tattoo Parlor and PTT Youngin$ Compound.",
     status: "verified",
     source: "store.rockstargames.com/game/buy-gta-vi",
+  },
+  {
+    id: "digital",
+    group: "game",
+    question: "Can I buy GTA VI as a digital download?",
+    answer:
+      "Yes. GTA VI is sold digitally for PlayStation 5 and Xbox Series X|S. A digital code is redeemed on the PlayStation Store or the Microsoft Store, and the game then downloads to your console. Make sure the code matches your platform and your console account's region.",
+    status: "verified",
   },
   {
     id: "upgrade",
@@ -205,8 +213,9 @@ export const faq: FaqItem[] = [
     id: "refunds",
     group: "buying",
     question: "What is your refund policy?",
-    answer: "Our refund policy will be published here before checkout opens.",
-    status: "draft",
+    answer:
+      "If we cannot verify your payment or deliver your game, we refund what we received, in the same coin and on the same network. You can cancel before your game is released. Once a code is revealed it cannot be returned, but a faulty code is replaced or refunded. Our Refund & Cancellation Policy has the details.",
+    status: "verified",
     requires: "checkout",
   },
 ];

@@ -1,12 +1,12 @@
 # VICE STORE: SEO, AEO and organic growth strategy
 
-Status: 21 November 2026. Grand Theft Auto VI launched on 19 November 2026 (PS5, Xbox Series X|S). The site is **not indexable yet**:
+Status: 24 November 2026. Grand Theft Auto VI launched on 19 November 2026 (PS5, Xbox Series X|S). The site is **indexable**:
 
-- `robots.txt` disallows everything.
-- Every page carries `noindex`.
-- The sitemap is empty.
+- `robots.txt` allows crawling (except admin, API, checkout and order pages) and points to the sitemap.
+- Pages are indexable, with canonical URLs and a large image preview allowed.
+- `/sitemap.xml` lists the homepage, the six information pages and the credits page.
 
-The site stays that way until `NEXT_PUBLIC_INDEXABLE=true`, which should be set only after the launch blockers below are cleared.
+Set `NEXT_PUBLIC_INDEXABLE=false` (build time) only for a staging copy: it closes robots.txt, empties the sitemap and adds `noindex`.
 
 > **Evidence rule.** This document has no search volumes, keyword difficulty scores or traffic forecasts. None were measured, and quoting third-party estimates as fact would be fabrication. Priorities are based on observed search results (SERPs), intent and how well we can satisfy the query truthfully. Measure real demand in Search Console and Google Trends after launch (see Monitoring).
 
@@ -156,7 +156,7 @@ Before the filter fix: LCP 0.86 s (mobile) and 0.49 s (desktop), but interaction
 5. **Crypto payments.** Read the current Google Ads cryptocurrency and financial-products rules for the target countries before any ad mentions crypto payment. Selling a game for crypto is not a crypto product, but ad copy can trigger reviews.
 6. **AdSense.** Ads require the published privacy and cookie policies (drafted), plus a Google-certified consent management platform for the EEA, UK and Switzerland before enabling them.
 
-## 8. Monitoring (after `NEXT_PUBLIC_INDEXABLE=true`)
+## 8. Monitoring
 
 - **Search Console:**
   - Weekly: Queries and Pages reports (impressions, CTR, position), filtered for "gta 6", "gta vi", "edition", "price", "code", "crypto" and "series s".
@@ -172,3 +172,24 @@ Before the filter fix: LCP 0.86 s (mobile) and 0.49 s (desktop), but interaction
 - **Content freshness:**
   - Review prices, editions and bonus facts against official sources at least weekly in launch season.
   - Update the `verified` flags and dates in config, never the copy alone.
+
+## 9. Keyword map and Search Console checklist (VICE-SEO-03, 24 November 2026)
+
+Target intent per page (no separate keyword landing pages; one strong page per intent):
+
+| Page | Primary searches | Supporting / question searches |
+| --- | --- | --- |
+| `/` (editions, comparison, FAQ) | GTA 6, GTA 6 PS5, GTA 6 Xbox Series X\|S, GTA 6 price, GTA 6 editions comparison | GTA 6 Standard vs Ultimate, what is in GTA 6 Ultimate Edition, can I buy GTA 6 as a digital download, are GTA 6 codes region-locked, GTA 6 on Xbox Series S |
+| `/` once checkout is open | buy GTA 6 online, GTA 6 digital code, GTA 6 game codes | how to redeem a GTA 6 code on PS5 / Xbox, how long does delivery take |
+| `/about`, `/contact` | VICE STORE, GTA 6 store, GTA 6 order support | is VICE STORE legit, how do I contact VICE STORE |
+| Policies | VICE STORE refund policy, terms, privacy | can I get a refund on a GTA 6 code |
+
+Titles carry "GTA 6" (how most people search) beside "Grand Theft Auto VI"; "Buy" appears only while checkout is open. FAQ answers are the AEO/GEO source: short, direct, factual, also served in `/llms.txt` and FAQPage structured data.
+
+**Search Console steps after each deploy:**
+1. Confirm the HTML tag (`google-site-verification`) is on `https://vicestoregaming.com/` and press Verify (property: Domain or URL prefix `https://vicestoregaming.com/`).
+2. Sitemaps → submit `https://vicestoregaming.com/sitemap.xml` (8 URLs: home, six information pages, credits).
+3. URL Inspection → `https://vicestoregaming.com/` → Test live URL → Request indexing. Repeat for `/about` and `/contact`.
+4. Check Pages → "Not indexed": `/checkout`, `/order-status`, `/admin` and `/api` are excluded on purpose (robots.txt + noindex).
+5. Favicon: Google uses `/favicon.ico` (48 px) and `/icon.png` (96 px); it refreshes on its own schedule after the homepage is recrawled.
+6. Optional: add the site to Bing Webmaster Tools (`BING_SITE_VERIFICATION`, or import from Search Console).

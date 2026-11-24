@@ -55,7 +55,7 @@ All settings are environment variables. `.env.example` lists and explains each o
 - `NEXT_PUBLIC_SITE_URL`: the store's domain.
 - `DATABASE_URL`: production Postgres. Leave it empty to use local PGlite.
 - `SMTP_*`, `EMAIL_FROM`, `EMAIL_MODE`: email. Test mode sends every email to `EMAIL_TEST_RECIPIENT`.
-- `NEXT_PUBLIC_INDEXABLE`: set to `true` only when the store should appear in search engines.
+- `NEXT_PUBLIC_INDEXABLE`: search indexing is on by default; set `false` only for a staging copy.
 - `ADMIN_BOOTSTRAP_*`: the first admin account.
 
 Wallet addresses are never stored in code. Enter them in Admin → Wallets.

@@ -2,7 +2,7 @@
 #
 #   docker build -t store \
 #     --build-arg NEXT_PUBLIC_SITE_URL=https://www.example-store.com \
-#     --build-arg NEXT_PUBLIC_INDEXABLE=true .
+#     --build-arg NEXT_PUBLIC_INDEXABLE=false . (staging only; indexing is on by default)
 #
 # NEXT_PUBLIC_* values are baked into the browser code at build time, so they are build args.
 # Every other setting (DATABASE_URL, secrets, SMTP) is passed at run time. .env files, local

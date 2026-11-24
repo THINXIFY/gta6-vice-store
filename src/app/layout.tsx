@@ -12,23 +12,24 @@ import { site } from "@/config/site";
 import { getCatalog } from "@/server/catalog";
 import { getNav } from "@/server/home";
 import { getContent } from "@/server/content";
+import { indexable } from "@/lib/seo";
 import "./globals.css";
 
 
 const MOTION_BOOT = `if(matchMedia("(prefers-reduced-motion: no-preference)").matches)document.documentElement.classList.add("motion-ok")`;
 
-/** Flip to "true" at launch. Keeps placeholder builds out of search indexes. */
-const indexable = process.env.NEXT_PUBLIC_INDEXABLE === "true";
 
-// Under 160 characters. Purchase wording only once checkout is genuinely open.
+// Search snippet: titles under 60 characters, descriptions under 160. "GTA 6" is how most people
+// search for the game; purchase wording only once checkout is genuinely open.
+const homeTitle = commerce.checkoutEnabled ? `Buy GTA 6 for PS5 & Xbox Series X|S | ${site.name}` : `GTA 6 PS5 & Xbox Series X|S: Editions & Prices | ${site.name}`;
 const description = commerce.checkoutEnabled
-  ? `Buy GTA VI Standard or Ultimate Edition for PS5 and Xbox Series X|S. Compare what each edition includes and pay in crypto.`
-  : `Compare GTA VI Standard and Ultimate Edition for PS5 and Xbox Series X|S: prices, what each includes and which to choose.`;
+  ? `Buy GTA 6 (Grand Theft Auto VI) Standard or Ultimate Edition for PS5 and Xbox Series X|S as a digital code. Compare editions, pay in crypto.`
+  : `Compare GTA 6 (Grand Theft Auto VI) Standard and Ultimate Edition for PS5 and Xbox Series X|S: prices, what each includes and digital codes.`;
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   applicationName: site.name,
-  title: { default: `${site.title} | ${site.name}`, template: `%s | ${site.name}` },
+  title: { default: homeTitle, template: `%s | ${site.name}` },
   description,
   alternates: { canonical: "/" },
   openGraph: {
@@ -36,12 +37,14 @@ export const metadata: Metadata = {
     siteName: site.name,
     locale: site.locale.replace("-", "_"),
     url: "/",
-    title: `${site.title} | ${site.name}`,
+    title: homeTitle,
     description,
   },
-  twitter: { card: "summary_large_image", title: `${site.title} | ${site.name}`, description },
+  twitter: { card: "summary_large_image", title: homeTitle, description },
   appleWebApp: { title: site.name, statusBarStyle: "black-translucent" },
-  robots: { index: indexable, follow: indexable },
+  robots: indexable
+    ? { index: true, follow: true, googleBot: { index: true, follow: true, "max-image-preview": "large", "max-snippet": -1, "max-video-preview": -1 } }
+    : { index: false, follow: false },
   // Search Console / Bing Webmaster ownership tokens (meta-tag method), set per environment.
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION || brand.googleSiteVerification,

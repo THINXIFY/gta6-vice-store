@@ -16,7 +16,7 @@ and log files. It uses the server's Node.js. No existing config, database or ser
 | Backups | `/srv/vice-store/.data/backups` (git-ignored) |
 | Licensed artwork | `/srv/vice-store/public/media` (git-ignored, from the media package) |
 
-The site goes live as a **non-transactional preview**: checkout off, search indexing off. Images
+The site goes live **indexable** (sitemap at `/sitemap.xml`) with checkout off. Images
 are not in Git: they are sent with the media package (see *Images* below).
 
 ---
@@ -78,7 +78,6 @@ mkdir -p /etc/vice-store
 ADMIN_PASS=$(openssl rand -base64 18)
 cat > /etc/vice-store/env <<EOF
 NEXT_PUBLIC_SITE_URL=https://vicestoregaming.com
-NEXT_PUBLIC_INDEXABLE=
 NEXT_PUBLIC_CHECKOUT_ENABLED=
 NEXT_PUBLIC_CONTENT_PREVIEW=
 DATABASE_URL=postgres://vicestore:$DB_PASS@127.0.0.1:5432/vicestore
@@ -231,7 +230,7 @@ then run the update command (a rebuild is required), then restart.
 
 **Going transactional (later):** only when every item in Admin → Launch checklist is ready, set
 `NEXT_PUBLIC_CHECKOUT_ENABLED=true`, `EMAIL_MODE=live` and the SMTP settings, then rebuild and
-restart. Set `NEXT_PUBLIC_INDEXABLE=true` the same way when the store should appear in search.
+restart. Search indexing is on by default; add `NEXT_PUBLIC_INDEXABLE=false` only to hide a staging copy.
 
 **Remove completely** (touches nothing else):
 

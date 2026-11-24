@@ -63,9 +63,9 @@ test.describe("FAQ", () => {
     const faq = page.locator("#faq");
     const drafts = await faq.locator("details[data-status=draft]").count();
     const questions = await faq.locator("details").count();
-    // Live (checkout closed): the 8 verified game answers only. Preview: all 15, grouped in two topics.
-    if (drafts === 0) expect(questions).toBe(8);
-    else expect(questions).toBe(15);
+    // Live (checkout closed): the 9 verified game answers only. Preview: all 16, grouped in two topics.
+    if (drafts === 0) expect(questions).toBe(9);
+    else expect(questions).toBe(16);
     await expect(faq.getByRole("navigation", { name: "FAQ topics" }).getByRole("link")).toHaveCount(drafts === 0 ? 0 : 2);
   });
 

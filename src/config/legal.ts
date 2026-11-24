@@ -38,7 +38,7 @@ const UPDATED = "2026-11-24";
 export const infoPages: Record<PageId, InfoPage> = {
   about: {
     id: "about",
-    title: "About us",
+    title: "About us: an independent GTA 6 game store",
     heading: `About ${STORE}`,
     description: `${STORE} is an independent online store for Grand Theft Auto VI on PS5 and Xbox Series X|S, with human-checked cryptocurrency payments.`,
     schemaType: "AboutPage",
@@ -90,7 +90,7 @@ export const infoPages: Record<PageId, InfoPage> = {
 
   contact: {
     id: "contact",
-    title: "Contact and customer support",
+    title: "Contact us: GTA 6 order and payment support",
     heading: "Contact us",
     description: `Get help with an order, a crypto payment, game delivery or a refund. Message ${STORE} support or email ${EMAIL}.`,
     schemaType: "ContactPage",

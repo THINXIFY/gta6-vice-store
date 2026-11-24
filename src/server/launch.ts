@@ -1,4 +1,5 @@
 import "server-only";
+import { indexable } from "@/lib/seo";
 import { and, eq, isNull, sql } from "drizzle-orm";
 import { brand } from "@/brand/brand";
 import { pendingItems } from "@/config/legal";
@@ -175,10 +176,10 @@ export async function launchChecks(): Promise<Check[]> {
       id: "indexing",
       group: "Infrastructure",
       title: "Search engines allowed",
-      ok: process.env.NEXT_PUBLIC_INDEXABLE === "true",
+      ok: indexable,
       required: false,
-      detail: process.env.NEXT_PUBLIC_INDEXABLE === "true" ? "Indexing on, sitemap published." : "Off: the site asks search engines not to index it.",
-      fix: { label: "NEXT_PUBLIC_INDEXABLE=true at launch" },
+      detail: indexable ? "Indexing on, sitemap published." : "Off: the site asks search engines not to index it.",
+      fix: { label: "Remove NEXT_PUBLIC_INDEXABLE=false" },
     },
   ];
 }
