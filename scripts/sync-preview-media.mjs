@@ -8,8 +8,8 @@
  *  - otherwise → deletes /public/preview-media, so a normal build contains none of them.
  * Refuses to build with media or content preview on while marked indexable (a production
  * misconfiguration).
- * Authorised files (src/config/media-rights.json) are kept in /public/media, byte-for-byte;
- * register files that are not authorised are removed from it.
+ * Cleared files (src/lib/mediaRights.ts) are kept in /public/media, byte-for-byte; anything
+ * else is removed from it.
  */
 import { copyFileSync, cpSync, existsSync, mkdirSync, readdirSync, rmSync } from "node:fs";
 import { join } from "node:path";

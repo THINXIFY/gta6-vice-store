@@ -1,26 +1,26 @@
-import register from "@/config/media-rights.json";
-
-type Status = "pending" | "licensed" | "original";
-type Entry = { file: string; origin: string; thirdPartyMarks: string[] | null; status: string; permission: string };
-
 /**
- * Whether a supplied file may appear on the live site, from src/config/media-rights.json.
- * Same rule as scripts/media-rights.mjs (the packaging step): "licensed" needs recorded written
- * permission; "original" needs the owner's statement, no third-party marks and a non-Rockstar origin.
+ * Supplied files cleared for the live site. Everything not listed stays local-only preview.
+ * "original": artwork the store owner created (owner statement 2026-11-24: AI-generated for this
+ * store; reviewed, no logos or game artwork). "licensed": written commercial-use permission on file.
+ * `npm run media:package` reads this list (between the markers) to pack the files for the server.
  */
-export function rightsFor(file: string): Exclude<Status, "pending"> | "pending" {
-  const e = (register.assets as Entry[]).find((a) => a.file === file);
-  if (!e || !e.permission.trim()) return "pending";
-  if (e.status === "licensed") return "licensed";
-  if (e.status === "original" && Array.isArray(e.thirdPartyMarks) && e.thirdPartyMarks.length === 0 && !/rockstar/i.test(e.origin)) return "original";
-  return "pending";
-}
+// rights:start
+const cleared: Record<string, "original" | "licensed"> = {
+  "vice-city-aerial.png": "original",
+  "helicopter.gif": "original",
+  "region-leonida-keys.png": "original",
+  "region-grassrivers.png": "original",
+  "region-port-gellhorn.png": "original",
+  "region-ambrosia.png": "original",
+  "region-mount-kalaga.png": "original",
+};
+// rights:end
 
 /**
- * `src` + `license` for a supplied file: authorised files are served from /media (packaged by
+ * `src` + `license` for a supplied file: cleared files are served from /media (packaged by
  * `npm run media:package`), everything else from the local-only /preview-media.
  */
 export function asset(file: string): { src: string; license: "pending" | "licensed" | "original" } {
-  const license = rightsFor(file);
+  const license = cleared[file] ?? "pending";
   return { src: (license === "pending" ? "/preview-media/" : "/media/") + file, license };
 }
