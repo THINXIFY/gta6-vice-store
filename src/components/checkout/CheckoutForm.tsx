@@ -228,7 +228,7 @@ export function CheckoutForm({ initialEdition, initialPlatform, catalog }: { ini
 
           <p className="flex items-start gap-2.5 px-1 text-sm text-warm/55">
             <ShieldCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-sunset" />
-            Guest checkout, no account needed. We will never ask for your wallet&apos;s private keys or recovery phrase.
+            No account needed. We will never ask for your wallet&apos;s private keys or recovery phrase.
           </p>
         </div>
       </aside>
@@ -308,7 +308,13 @@ export function CheckoutForm({ initialEdition, initialPlatform, catalog }: { ini
         </Step>
 
         <div id="pay-step">
-          <Step n={3} title="Pay with crypto" done={payDone} hint={`${methods.length} ways to pay`}>
+          <Step n={3} title="Pay with crypto" done={payDone} hint={methods.length ? `${methods.length} ways to pay` : undefined}>
+            {methods.length === 0 ? (
+              <p role="note" className="flex gap-3 rounded-xl border border-warning/25 bg-warning/[0.06] px-4 py-3.5 text-sm text-warning-soft">
+                <AlertTriangle aria-hidden className="mt-0.5 size-4 shrink-0" />
+                Payment is temporarily unavailable. Please try again shortly or contact support.
+              </p>
+            ) : (
             <div role="radiogroup" aria-label="Payment method" aria-describedby={methodError ? "method-error" : undefined} className="grid gap-3 sm:grid-cols-2">
               {methods.map(({ asset: a, network: n }) => {
                 const checked = assetId === a.id && network === n;
@@ -351,6 +357,7 @@ export function CheckoutForm({ initialEdition, initialPlatform, catalog }: { ini
                 );
               })}
             </div>
+            )}
 
             {asset && network ? (
               <div key={`${asset.id}:${network}`} role="note" className="swap-in mt-5 flex gap-3 rounded-xl border border-vice/25 bg-vice/[0.07] px-4 py-3.5 text-sm text-danger-pale">

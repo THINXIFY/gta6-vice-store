@@ -84,7 +84,6 @@ DATABASE_URL=postgres://vicestore:$DB_PASS@127.0.0.1:5432/vicestore
 IP_HASH_SALT=$(openssl rand -hex 32)
 FULFILLMENT_KEY=$(openssl rand -base64 32)
 TRUST_PROXY=1
-ADMIN_REQUIRE_2FA=1
 ADMIN_BOOTSTRAP_EMAIL=$ADMIN_EMAIL
 ADMIN_BOOTSTRAP_PASSWORD=$ADMIN_PASS
 EMAIL_MODE=test
@@ -96,6 +95,8 @@ echo "First admin password: $ADMIN_PASS"
 - Save the admin password in a password manager.
 - Back up `FULFILLMENT_KEY` off the server: game codes can't be decrypted without it.
 - Email settings (`SMTP_*`, `EMAIL_FROM`) can be added later; see `.env.example`.
+- Two-factor sign-in is optional: it stays available in Admin → Settings. To make it mandatory for
+  every admin, add `ADMIN_REQUIRE_2FA=1` and restart.
 - One `KEY=value` per line, no inline comments (systemd would read them as part of the value).
 
 ## 5. Build and migrate
@@ -166,7 +167,7 @@ systemctl is-enabled vice-store && systemctl is-active vice-store
 In a browser:
 1. Open `https://vicestoregaming.com` and check the padlock and the logo.
 2. Open `/admin/login` and sign in with the bootstrap account.
-3. Set up two-factor sign-in in Settings.
+3. Optionally set up two-factor sign-in in Settings (recommended, not required).
 4. Remove the two `ADMIN_BOOTSTRAP_*` lines from `/etc/vice-store/env` and run `systemctl restart vice-store`.
 
 ## 9. Daily backups (03:30, newest 14 kept)

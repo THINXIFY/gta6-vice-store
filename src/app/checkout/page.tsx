@@ -17,7 +17,7 @@ export default async function CheckoutPage({ searchParams }: { searchParams: Sea
   const platform: PlatformId = pick(q.platform, defaultPlatform, catalog.platforms.filter((p) => p.available).map((p) => p.id));
 
   return (
-    <CheckoutShell eyebrow="Secure guest checkout" title="Checkout" back={{ href: "/#editions", label: "Back to editions" }} stage={1}>
+    <CheckoutShell eyebrow="Secure checkout" title="Checkout" back={{ href: "/#editions", label: "Back to editions" }} stage={1}>
       <CheckoutForm initialEdition={edition} initialPlatform={platform} catalog={catalog} />
     </CheckoutShell>
   );

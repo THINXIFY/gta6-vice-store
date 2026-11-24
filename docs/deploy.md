@@ -28,7 +28,7 @@ Copy `.env.example` into the host's environment and fill it in. The ones that ma
 | `FULFILLMENT_KEY` | Encrypts game codes: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Back it up**: codes cannot be read without it. |
 | `TRUST_PROXY` | `1` behind a proxy or load balancer that sets `X-Forwarded-For`. |
 | `ADMIN_BOOTSTRAP_EMAIL`, `ADMIN_BOOTSTRAP_PASSWORD` | First owner (12+ characters). Remove both after the first sign-in. |
-| `ADMIN_REQUIRE_2FA` | `1` (every admin uses an authenticator app). |
+| `ADMIN_REQUIRE_2FA` | Optional. Leave empty; set `1` only to require an authenticator app for every admin. |
 | `SMTP_HOST`, `SMTP_PORT`, `SMTP_SECURITY`, `SMTP_USER`, `SMTP_PASS` | The mail server. |
 | `EMAIL_FROM` | `"Store <orders@client-domain.com>"` (address on the SMTP domain). |
 | `EMAIL_MODE` | `live` once checkout is open (`test` redirects every email to `EMAIL_TEST_RECIPIENT`). |
