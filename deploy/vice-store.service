@@ -1,5 +1,5 @@
 # VICE STORE: systemd unit. Install as /etc/systemd/system/vice-store.service.
-# Runs on 127.0.0.1:5300 with its own Node (/srv/vice-store/node), as the vicestore user.
+# Runs /srv/vice-store on 127.0.0.1:5300 with the server's Node (/usr/bin/node), as the vicestore user.
 # Secrets: /etc/vice-store/env (root:vicestore, 640; KEY=value lines, no inline comments).
 [Unit]
 Description=VICE STORE (Next.js)
@@ -10,17 +10,17 @@ Wants=network-online.target
 Type=simple
 User=vicestore
 Group=vicestore
-WorkingDirectory=/srv/vice-store/app
+WorkingDirectory=/srv/vice-store
 EnvironmentFile=/etc/vice-store/env
 Environment=NODE_ENV=production
-ExecStart=/srv/vice-store/node/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 5300
+ExecStart=/usr/bin/node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 5300
 Restart=always
 RestartSec=5
 NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/vice-store/app/.next
+ReadWritePaths=/srv/vice-store/.next
 ProtectKernelTunables=true
 ProtectControlGroups=true
 RestrictSUIDSGID=true
