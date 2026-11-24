@@ -1,0 +1,29 @@
+# systemd unit: the store on 127.0.0.1:5300 behind Nginx. Install as /etc/systemd/system/vice-store.service.
+# Secrets live in /etc/vice-store/env (root:vicestore, mode 640), never in Git.
+[Unit]
+Description=VICE STORE (Next.js)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vicestore
+Group=vicestore
+WorkingDirectory=/srv/vice-store/app
+EnvironmentFile=/etc/vice-store/env
+Environment=NODE_ENV=production
+ExecStart=/usr/bin/env node node_modules/next/dist/bin/next start -H 127.0.0.1 -p 5300
+Restart=always
+RestartSec=5
+# Hardening: the app only needs its own directory.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/vice-store/app/.next /srv/vice-store/backups
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

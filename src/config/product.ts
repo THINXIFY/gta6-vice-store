@@ -86,10 +86,11 @@ export const deliveryFormats: readonly DeliveryFormat[] = ["digital-code"];
 export const commerce = {
   /**
    * Master switch for real checkout: buy buttons, live orders to the wallets in Admin → Wallets.
-   * Live since 2026-11-21 (owner instruction). Only the isolated e2e build (scripts/e2e.mjs,
-   * own distDir) turns it off, to exercise test orders with sample wallets.
+   * Opt-in per deployment (build time): NEXT_PUBLIC_CHECKOUT_ENABLED=true. Without it the site is a
+   * non-transactional preview. The isolated e2e build (scripts/e2e.mjs, own distDir) always turns
+   * it off, to exercise test orders with sample wallets.
    */
-  checkoutEnabled: process.env.NEXT_PUBLIC_CHECKOUT_TEST_MODE !== "1",
+  checkoutEnabled: process.env.NEXT_PUBLIC_CHECKOUT_ENABLED === "true" && process.env.NEXT_PUBLIC_CHECKOUT_TEST_MODE !== "1",
   currency: CURRENCY,
 } as const;
 

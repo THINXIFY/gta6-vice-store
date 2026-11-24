@@ -88,6 +88,32 @@
     color-scheme: dark;
     -webkit-text-size-adjust: 100%;
   }
+  /* Page scrollbar: a thin, dark thumb on the page colour; it warms to the brand on hover. */
+  html::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  html::-webkit-scrollbar-track {
+    background: var(--color-obsidian);
+  }
+  html::-webkit-scrollbar-thumb {
+    border: 2px solid var(--color-obsidian);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--color-warm) 16%, var(--color-obsidian));
+  }
+  html::-webkit-scrollbar-thumb:hover {
+    background: color-mix(in oklab, var(--color-vice) 55%, var(--color-obsidian));
+  }
+  html::-webkit-scrollbar-corner {
+    background: var(--color-obsidian);
+  }
+  /* Firefox (no ::-webkit-scrollbar): the standard properties. */
+  @supports not selector(::-webkit-scrollbar) {
+    html {
+      scrollbar-width: thin;
+      scrollbar-color: color-mix(in oklab, var(--color-warm) 16%, var(--color-obsidian)) var(--color-obsidian);
+    }
+  }
   body {
     background-color: var(--color-obsidian);
     color: var(--color-warm);

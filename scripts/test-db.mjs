@@ -31,7 +31,7 @@ test("migrations apply and are idempotent", async () => {
   await migrate(orm, { migrationsFolder });
   await migrate(orm, { migrationsFolder });
   const { rows } = await q(`select count(*)::int as n from information_schema.tables where table_schema = 'public'`);
-  assert.equal(rows[0].n, 16); // + email_messages (GTA-09D), support_messages (GTA-11A)
+  assert.equal(rows[0].n, 19); // + email_messages (GTA-09D), support_messages (GTA-11A), WL-2 to WL-4 catalogue, home blocks, site content
 });
 
 test("catalogue constraints", async () => {
