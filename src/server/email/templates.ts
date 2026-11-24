@@ -95,7 +95,11 @@ function layout(preheader: string, b: Block, data: EmailData, audience: "custome
 <div style="display:none;max-height:0;overflow:hidden;opacity:0">${esc(preheader)}</div>
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:${C.bg}"><tr><td align="center" style="padding:32px 12px">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:600px">
-  <tr><td style="padding:0 8px 20px"><span style="font:800 30px/1 ${DISPLAY};letter-spacing:2px;color:${C.warm}">${esc(site.wordmark[0])} <span style="color:${C.sunset}">${esc(site.wordmark[1])}</span></span>${audience === "admin" ? `<span style="font:600 12px/1 ${SANS};color:${C.muted};padding-left:8px">Admin</span>` : ""}</td></tr>
+  <tr><td style="padding:0 8px 20px">${
+    brand.logo
+      ? `<img src="${esc(site.url + brand.logo.png)}" width="180" height="${Math.round((180 * brand.logo.height) / brand.logo.width)}" alt="${esc(site.name)}" style="display:inline-block;vertical-align:middle;border:0;outline:none;height:auto;font:800 24px/1 ${DISPLAY};letter-spacing:2px;color:${C.warm}">`
+      : `<span style="font:800 30px/1 ${DISPLAY};letter-spacing:2px;color:${C.warm}">${esc(site.wordmark[0])} <span style="color:${C.sunset}">${esc(site.wordmark[1])}</span></span>`
+  }${audience === "admin" ? `<span style="font:600 12px/1 ${SANS};color:${C.muted};padding-left:8px">Admin</span>` : ""}</td></tr>
   <tr><td style="background:${C.card};border:1px solid ${C.line};border-radius:18px;overflow:hidden">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
       <tr><td style="height:4px;line-height:4px;font-size:0;background:${C.vice};background-image:linear-gradient(90deg,${C.vice},${C.sunset},${C.lavender})">&nbsp;</td></tr>

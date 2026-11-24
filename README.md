@@ -69,7 +69,8 @@ Licensed images go in `public/media/`. Without usable images, the site uses its 
 ## Documentation
 
 - [docs/white-label.md](docs/white-label.md): setting up a new client copy
-- [docs/deploy.md](docs/deploy.md): deployment, database, backups and health check
+- [deploy/README.md](deploy/README.md): step-by-step VPS deployment (Nginx, Let's Encrypt, systemd, PostgreSQL)
+- [docs/deploy.md](docs/deploy.md): deployment options, settings, backups and health check
 - [docs/checkout-architecture.md](docs/checkout-architecture.md): orders, payments and fulfilment
 - [docs/seo-strategy.md](docs/seo-strategy.md): SEO and structured data
 

@@ -12,7 +12,7 @@ export default async function LoginPage() {
       <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(50%_45%_at_25%_15%,color-mix(in_oklab,var(--color-vice)_14%,transparent),transparent_70%),radial-gradient(45%_40%_at_80%_85%,color-mix(in_oklab,var(--color-lavender)_12%,transparent),transparent_70%)]" />
       <div className="w-full max-w-sm">
         <p>
-          <Wordmark className="text-4xl" />
+          <Wordmark priority className="text-4xl" />
         </p>
         <h1 className="mt-6 text-xl font-semibold">Admin sign in</h1>
         <p className="mt-1 text-sm text-warm/55">Orders, payments and fulfillment.</p>

@@ -2,6 +2,7 @@ import { trailerEmbeds, trailers } from "@/config/media";
 import { publishedFaq } from "@/components/sections/faq/Faq";
 import { getContent } from "@/server/content";
 import { game } from "@/config/product";
+import { brand } from "@/brand/brand";
 import { site } from "@/config/site";
 import type { Catalog } from "@/lib/catalog";
 import { checkoutOpen } from "@/lib/checkout";
@@ -9,7 +10,8 @@ import { checkoutOpen } from "@/lib/checkout";
 /**
  * JSON-LD that mirrors visible, verified content only. Each entity is gated on what is true
  * today, so markup can never get ahead of the business:
- *  - WebSite: always. Organization: only once the seller's legal name is confirmed.
+ *  - WebSite + Organization (the store's brand: name, URL, logo): always. Legal name and email
+ *    are added only once confirmed.
  *  - VideoGame: verified game facts. VideoObject: the official trailers shown on the page.
  *  - FAQPage: verified answers only.
  *  - Product + Offer: only while live checkout is open (real stock, rights, policies), from
@@ -20,10 +22,18 @@ export async function StructuredData({ catalog }: { catalog: Catalog }) {
   const id = (frag: string) => `${site.url}/#${frag}`;
   const graph: Record<string, unknown>[] = [];
 
-  const organization = site.seller.legalName
-    ? { "@type": "Organization", "@id": id("organization"), name: site.name, legalName: site.seller.legalName, url: site.url, logo: `${site.url}/apple-icon`, ...(site.seller.supportEmail ? { email: site.seller.supportEmail } : {}) }
-    : null;
-  if (organization) graph.push(organization);
+  // Google's logo guideline: at least 112×112, legible on white; the square icon is.
+  const organization = {
+    "@type": "Organization",
+    "@id": id("organization"),
+    name: site.name,
+    url: site.url,
+    logo: { "@type": "ImageObject", "@id": id("logo"), url: `${site.url}/brand/icon-512.png`, width: 512, height: 512, caption: site.name },
+    ...(brand.logo && { image: `${site.url}${brand.logo.png}` }),
+    ...(site.seller.legalName ? { legalName: site.seller.legalName } : {}),
+    ...(site.seller.supportEmail ? { email: site.seller.supportEmail } : {}),
+  };
+  graph.push(organization);
 
   graph.push({
     "@type": "WebSite",
@@ -32,7 +42,7 @@ export async function StructuredData({ catalog }: { catalog: Catalog }) {
     url: site.url,
     description: site.tagline,
     inLanguage: site.locale,
-    ...(organization && { publisher: { "@id": id("organization") } }),
+    publisher: { "@id": id("organization") },
   });
 
   graph.push({

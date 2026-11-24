@@ -13,7 +13,12 @@ export const brand = {
   name: "VICE STORE",
   /** The wordmark in two parts: the first in the text colour, the second in the primary → secondary gradient. */
   wordmark: ["VICE", "STORE"] as const,
-  /** One or two characters for the favicon and home-screen icon. */
+  /**
+   * The supplied logo (sources in src/brand/assets/, files built by `npm run brand:assets`).
+   * Set to null to fall back to the typeset wordmark above. Icons are built from assets/mark.png.
+   */
+  logo: { png: "/brand/logo.png", webp: "/brand/logo.webp", width: 1200, height: 339 } as { png: string; webp: string; width: number; height: number } | null,
+  /** One or two characters for a client without a logo (alt text fallback). */
   monogram: "V",
   tagline: "Unlock your next adventure.",
   /** Default page title (SEO); the store name is appended. */

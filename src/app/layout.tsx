@@ -44,6 +44,7 @@ export const metadata: Metadata = {
     ...(isUsable(shareImage) && { images: [{ url: shareImage.src, width: shareImage.width, height: shareImage.height, alt: shareImage.alt }] }),
   },
   twitter: { card: "summary_large_image", title: `${site.title} | ${site.name}`, description, ...(isUsable(shareImage) && { images: [shareImage.src] }) },
+  appleWebApp: { title: site.name, statusBarStyle: "black-translucent" },
   robots: { index: indexable, follow: indexable },
   // Search Console / Bing Webmaster ownership tokens (meta-tag method), set per environment.
   verification: {

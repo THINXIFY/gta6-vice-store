@@ -114,7 +114,7 @@ export function Header({ nav }: { nav: NavItem[] }) {
         )}
       >
         <a href={to("#overview")} onClick={navigate} className="flex items-center gap-3.5 justify-self-start rounded-full focus-visible:outline-offset-4" aria-label={`${site.name}, back to top`}>
-          <Wordmark className="text-[1.375rem] sm:text-[1.5rem]" />
+          <Wordmark priority className="text-[1.375rem] sm:text-[1.625rem]" />
         </a>
 
         <nav aria-label="Primary" className="hidden md:block">

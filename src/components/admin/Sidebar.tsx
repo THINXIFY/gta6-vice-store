@@ -50,7 +50,7 @@ export function Sidebar({ email, role, reviewCount, supportCount, logout }: { em
         className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-56 bg-[radial-gradient(120%_80%_at_0%_0%,color-mix(in_oklab,var(--color-vice)_16%,transparent),transparent_60%),radial-gradient(90%_70%_at_100%_0%,color-mix(in_oklab,var(--color-lavender)_12%,transparent),transparent_65%)]"
       />
       <div className="flex h-14 items-center gap-3 px-4 lg:h-16 lg:px-6">
-        <Link href="/admin" className="flex items-baseline gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vice">
+        <Link href="/admin" className="flex items-center gap-2 rounded-md focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-vice">
           <Wordmark className="text-[1.375rem]" />
           <span className="text-xs font-medium text-warm/50">Admin</span>
         </Link>

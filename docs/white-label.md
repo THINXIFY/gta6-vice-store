@@ -13,6 +13,7 @@ checklist below, deploy with [deploy.md](deploy.md), then work through Admin →
 | --- | --- |
 | `src/brand/brand.ts` | Store name, wordmark, monogram, tagline, page title, description, locale, seller and support details, the nine brand colours, font names |
 | `src/brand/fonts.ts` | The two web fonts (swap the `next/font/google` imports and calls; keep the `variable` names) |
+| `src/brand/assets/logo.png`, `favicon.png` | Logo and favicon sources (`npm run brand:assets` builds every size) |
 | `src/brand/fonts/display.woff`, `sans.woff` | The same fonts as static files, for the share image and icons |
 | `src/config/product.ts` | The **starting** catalogue only (seeds a new database; admin wins afterwards), plus game facts |
 | `src/brand/home.ts` | The **starting** home page layout: block order, visibility and menu labels (admin wins afterwards) |
@@ -27,9 +28,13 @@ Everything else is generated from these:
   `lavender`=accent, `warm`=text, plus `success*`, `warning*`, `danger-*`, `blend`). Translucent
   brand colours are written as `color-mix(in_oklab,var(--color-vice)_12%,transparent)`, never as
   fixed RGB values.
-- **Favicon and home-screen icon**: `src/app/icon.tsx`, `apple-icon.tsx` render the monogram
-  (`src/brand/mark.tsx`).
-- **Share image**: `src/app/opengraph-image.tsx` renders the wordmark, title and tagline.
+- **Logo and icons**: put the client's logo and favicon in `src/brand/assets/` (`logo.png`, `favicon.png`,
+  transparent PNGs) and run `npm run brand:assets`. It writes `public/brand/logo.{png,webp}` (header,
+  footer, admin, emails, share card via `brand.logo`), `src/app/favicon.ico`, `icon.png`,
+  `apple-icon.png` and the PWA icons in `public/brand/` (`src/app/manifest.ts`). With `brand.logo: null`
+  the typeset wordmark is used instead.
+- **Share image**: `src/app/opengraph-image.tsx` (and `twitter-image.tsx`) render the logo, tagline,
+  title and domain over a brand-coloured horizon (1200×630).
 - **Emails**: colours and font names come from `emailPalette` and `brand.fonts`.
 
 ## Catalogue (managed in admin)

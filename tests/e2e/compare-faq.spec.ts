@@ -74,9 +74,15 @@ test.describe("FAQ", () => {
     const blocks = await page.locator('script[type="application/ld+json"]').allTextContents();
     const data = blocks.flatMap((b) => ((JSON.parse(b) as { "@graph"?: Record<string, unknown>[] })["@graph"] ?? [JSON.parse(b)]) as Record<string, unknown>[]);
     const types = data.map((d) => d["@type"]);
-    // Commercial and identity markup stays off until real (checkout closed, seller unconfirmed).
-    for (const t of ["Product", "Offer", "Organization", "AggregateRating", "Review"]) expect(types).not.toContain(t);
+    // Commercial markup stays off until real (checkout closed).
+    for (const t of ["Product", "Offer", "AggregateRating", "Review"]) expect(types).not.toContain(t);
     expect(types).toContain("WebSite");
+    // Organization = the store's brand (name, URL, logo); legal identity only once confirmed.
+    const org = data.find((d) => d["@type"] === "Organization") as { name: string; logo: { url: string }; legalName?: string; email?: string };
+    expect(org.name).toBeTruthy();
+    expect(org.logo.url).toMatch(/\/brand\/icon-512\.png$/);
+    expect(org).not.toHaveProperty("legalName");
+    expect(org).not.toHaveProperty("email");
     const videos = data.filter((d) => d["@type"] === "VideoObject");
     expect(videos.length).toBeGreaterThan(0);
     for (const v of videos) {
