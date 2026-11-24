@@ -4,7 +4,7 @@ export const heroCopy = {
   title: "Grand Theft Auto",
   titleMark: "VI",
   subtitle: "Welcome to Leonida.",
-  description: "Neon nights, sun-soaked streets and a story that’s yours to write.",
+  description: "Jason and Lucia against the world — chasing the big score across sun-soaked, neon-lit Leonida.",
   primaryCta: { label: "Get GTA VI", href: "#editions" },
   secondaryCta: { label: "Watch trailer", href: "#trailers" },
 } as const;
@@ -62,6 +62,6 @@ export const faqCopy = {
 
 /** Shown on the checkout, payment, success and order pages (DeliveryNote). Matches the real flow. */
 export const deliveryCopy = {
-  title: "Your download link arrives by email",
-  body: "As soon as your payment is confirmed, we email you a private link to get your game. Open it for your code, redeem it on your account and download the complete game.",
+  title: "Your download link, the moment your payment is confirmed",
+  body: "As soon as we confirm your payment, we email you a private link to your order. Open it for your code, redeem it on your PlayStation 5 or Xbox, and the complete Grand Theft Auto VI game downloads straight to your console.",
 } as const;

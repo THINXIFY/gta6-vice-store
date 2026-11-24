@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import { Container, Display } from "@/components/ui/Layout";
 import { Glow } from "@/components/ui/Atmosphere";
 import { Price } from "@/components/ui/Price";
+import { DeliveryNote } from "@/components/checkout/ui";
 import { useCopy } from "@/components/ContentProvider";
 import { useCatalog } from "@/components/CatalogProvider";
 import { game, purchaseDetails } from "@/config/product";
@@ -199,7 +200,7 @@ export function PurchaseSection({ notes = [] }: { notes?: string[] }) {
   const purchaseCopy = copy.purchase;
   // "Pay with USDT, BTC, ETH and BNB. Guest checkout." from the methods enabled in Admin → Wallets.
   const coins = offeredAssets(useCatalog().methods).map((a) => a.id);
-  const payWith = coins.length ? `Pay with ${new Intl.ListFormat("en", { type: "conjunction" }).format(coins)}. Guest checkout.` : "Guest checkout.";
+  const payWith = coins.length ? `Pay with ${new Intl.ListFormat("en", { type: "conjunction" }).format(coins)}. No account needed.` : "No account needed.";
   const { edition } = usePurchase();
   const release = releaseLine();
 
@@ -235,6 +236,7 @@ export function PurchaseSection({ notes = [] }: { notes?: string[] }) {
           <p id="checkout-status" className="mt-3 text-center text-sm text-warm/55">
             {checkoutAvailable ? payWith : purchaseCopy.checkoutClosed}
           </p>
+          <DeliveryNote className="mt-6" />
           {notes.length > 0 && (
             <ul className="mt-8 grid gap-3 border-t border-warm/10 pt-6 text-sm text-warm/65">
               {notes.map((n) => (
