@@ -1,4 +1,6 @@
+import { brand } from "@/brand/brand";
 import { asset } from "@/lib/mediaRights";
+const ownArt = `${brand.name}, original AI-generated artwork`;
 import type { EditionArtItem, GalleryItem, MediaItem, Trailer } from "./types";
 
 /**
@@ -51,7 +53,7 @@ const heroNight: MediaItem = {
   ...asset("gta-hero-home-new-1.png"),
   width: 1672,
   height: 941,
-  credit: "Supplied artwork (source unconfirmed)",
+  credit: "Supplied artwork, AI-generated (contains the Grand Theft Auto VI logo)",
 };
 
 /** The same beachfront at sunrise (identical framing): scrolling turns night into morning. */
@@ -62,7 +64,7 @@ const heroMorning: MediaItem = {
   ...asset("gta-hero-home-new-morning.png"),
   width: 1672,
   height: 941,
-  credit: "Supplied artwork (source unconfirmed)",
+  credit: "Supplied artwork, AI-generated (contains the Grand Theft Auto VI logo)",
 };
 
 export const heroArt: HeroArt = {
@@ -118,7 +120,7 @@ export const showcase: (MediaItem & { caption: string })[] = [
     ...asset("city-view.png"),
     width: 1672,
     height: 941,
-    credit: "Supplied artwork (source unconfirmed)",
+    credit: ownArt,
   },
   {
     id: "boobie-ike-02",
@@ -141,7 +143,7 @@ export const exploreHelicopter: MediaItem = {
   ...asset("helicaptor-gif.gif"),
   width: 491,
   height: 193,
-  credit: "Supplied animation (source unconfirmed)",
+  credit: ownArt,
 };
 
 /**
@@ -156,7 +158,7 @@ const regionScene = (id: string, focus: string): MediaItem & { focus: string } =
   ...asset(`region-${id}.png`),
   width: 1672,
   height: 941,
-  credit: "Supplied artwork (source unconfirmed)",
+  credit: ownArt,
   focus,
 });
 

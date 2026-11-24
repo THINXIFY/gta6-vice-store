@@ -128,7 +128,8 @@ export function Gallery() {
     gsap.from(scope.querySelectorAll("[data-gallery-media]"), { scale: 1.25, duration: 1.8, ease: "expo.out", stagger: 0.12, scrollTrigger: trigger });
   });
 
-  if (!items.length) return null;
+  // A gallery needs at least two frames; a single tile reads as unfinished.
+  if (items.length < 2) return null;
 
   return (
     <section ref={ref} id="gallery" aria-labelledby="gallery-title" className="relative isolate bg-obsidian py-section">
